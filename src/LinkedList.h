@@ -33,9 +33,6 @@ private:
 	Node* head;
 	Node* prev;
 	unsigned int listLength;
-
-
-
 };
 
 
@@ -130,7 +127,7 @@ bool LinkedList<T>::find(T value) {
 }
 
 template <typename T>
-LinkedList<T> LinkedList<T>::merge(LinkedList second) {
+LinkedList<T> LinkedList<T>::merge(LinkedList& second) {
 	if (this->head == nullptr) {
 		return second;
 	}
