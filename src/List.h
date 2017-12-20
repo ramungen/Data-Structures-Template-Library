@@ -126,14 +126,13 @@ void List<T>::print() {
 template <class T>
 void List<T>::printReverse() {
 	Node* iter = tail;
-	while (iter != nullptr) {
+	while (iter) {
 		std::cout << iter->data << ' ';
 
 		iter = iter->prev;
 	}
 	std::cout << std::endl;
 }
-
 
 
 #endif
