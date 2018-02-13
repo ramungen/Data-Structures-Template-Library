@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <random>
 #include <initializer_list>
-#include "LinkedList.h"
+#include "SList.h"
 
 
 class HashSet {
