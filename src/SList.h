@@ -1,5 +1,5 @@
-#ifndef LINKEDLIST_H
-#define LINKEDLIST_H
+#ifndef SLIST_H
+#define SLIST_H
 
 
 #include <iostream>
@@ -385,4 +385,5 @@ void SList<T>::sort() {
 		current = current->next;
 	}
 }
+
 #endif
