@@ -385,4 +385,5 @@ void SList<T>::sort() {
 		current = current->next;
 	}
 }
+
 #endif
