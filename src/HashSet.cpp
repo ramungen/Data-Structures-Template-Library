@@ -1,6 +1,6 @@
 
 #include "HashSet.h"
-#include "LinkedList.h"
+#include "SList.h"
 
 const unsigned int HashSet::startingSize = 20;
 
