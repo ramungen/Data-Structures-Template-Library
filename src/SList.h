@@ -107,12 +107,16 @@ public:
 	SList operator+(SList other);
 
 	void print() const;
+	void printMap() const;
 	unsigned int length();
 	SList<T>& operator=(SList<T>&& rhs);
 	SList<T>& operator=(SList<T>& rhs);
 
 private:
 	struct Node {
+		//Node() : next(nullptr) {
+//
+		//}
 		Node* next;
 		T data;
 	};
@@ -139,10 +143,6 @@ void SList<T>::push_front(T value) {
 	Node* second;
 	temp->data = value;
 	temp->next = nullptr;
-	//if (!head) {
-	//head = temp;
-	//head->next = nullptr;
-	//}
 
 	second = head;
 	head = temp;
@@ -365,6 +365,16 @@ void SList<T>::print() const {
 	Node* iter = head;
 	while (iter != nullptr) {
 		std::cout << iter->data << " --> ";
+		iter = iter->next;
+	}
+	std::cout << "NULL\n";
+}
+
+template <typename T>
+void SList<T>::printMap() const {
+	Node* iter = head;
+	while (iter != nullptr) {
+		std::cout << iter->data.first << '(' << iter->data.second << ')' << " --> ";
 		iter = iter->next;
 	}
 	std::cout << "NULL\n";

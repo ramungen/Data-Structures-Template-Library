@@ -1,6 +1,6 @@
 
-#ifndef HASHMAP_H
-#define HASHMAP_H
+#ifndef HASHSET_H
+#define HASHSET_H
 
 #include <string>
 #include <vector>
@@ -9,36 +9,10 @@
 #include <initializer_list>
 #include "SList.h"
 
-namespace {
-	template <typename str> // compiler calls this one if both are strings
-	bool isString(const str& s1, const str& s2) {
-		return true;
-	}
 
-	template<typename str, typename oth_type> // calls this one if not
-	bool isString(const str& s1, const oth_type& other) {
-		return false;
-	}
+template <typename val_type, 
+	typename prehash = std::hash<val_type> >
 
-	template <typename not_string>
-	std::string stringify(not_string val) {
-		std::string str;
-		
-	}
-}
-
-
-
-
-template <typename val_type>
-struct PreHash {
-	size_t operator()(const val_type& value) const {
-		size_t prehashCode = std::hash<val_type>{}(value);
-		return prehashCode;
-	}
-};
-
-template <typename val_type, typename prehash = PreHash<val_type> >
 class HashSet {
 private:
 
@@ -46,7 +20,7 @@ private:
 	unsigned int elements;
 	static const unsigned int startingSize;
 	prehash prehasher;
-	int a, b;
+	int rand1, rand2;
 
 public:
 
@@ -57,8 +31,8 @@ public:
 		std::random_device rd;
 		std::mt19937 generator(rd());
 		std::uniform_int_distribution<int> U(20, 10000);
-		a = U(generator);
-		b = U(generator);
+		rand1 = U(generator);
+		rand2 = U(generator);
 	}
 	
 	HashSet(const std::initializer_list<val_type>& list)
@@ -120,7 +94,6 @@ public:
 	int size() {
 		return elements;
 	}
-
 	
 	bool empty() {
 		return elements == 0;
@@ -132,7 +105,7 @@ private:
 		long long int oldKey = prehashKey;
 		int prime = 8188057;
 
-		long long int trueKey = (a * oldKey + b);
+		long long int trueKey = (rand1 * oldKey + rand2);
 		trueKey %= prime;
 		trueKey %= size;
 		return trueKey;
