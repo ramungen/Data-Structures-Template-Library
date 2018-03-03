@@ -9,6 +9,16 @@
 #include <initializer_list>
 #include "SList.h"
 
+
+/*
+	THINGS TO DO:
+	1. add load factor
+	2. add .rehash() method
+	3. add .clear() method
+	4 add .reserve() method
+
+	5. ADD THE SAME FUNCTIONALITY TO HASH MAP
+*/
 template <typename val_type, 
 	typename prehash = std::hash<val_type> >
 
