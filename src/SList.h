@@ -6,6 +6,13 @@
 #include <iterator>
 
 
+/*
+THINGS TO DO: 
+	1. Move all the methods inside the class to
+	save space and increase readability
+*/
+
+
 template <typename T>
 class SList {
 
@@ -23,6 +30,7 @@ private:
 		forward_iterator(reference p) : ptr(&p) {}
 		forward_iterator(const forward_iterator* source) : ptr(source->ptr) {}
 		forward_iterator& operator=(const forward_iterator& rhs) {
+
 			ptr = rhs.ptr;
 			return *this;
 		}
@@ -37,7 +45,7 @@ private:
 			if (ptr == nullptr) {
 				throw std::exception("error advancing end iterator");
 			}
-			iterator temp(this);
+			forward_iterator temp(this);
 			ptr = ptr->next;
 			return temp;
 		}
@@ -100,7 +108,32 @@ public:
 	void push_front(T value);
 	void push_back(T value);
 	bool erase(T value);
-	bool find(T value);
+	bool empty() {
+		return listLength == 0;
+	}
+	iterator find(const T& value) {
+
+		Node* iter = head;
+		while (iter) {
+			if (iter->data == value) {
+				return iterator(iter);
+			}
+			iter = iter->next;
+		}
+		iterator it(iter);
+		return it;
+	}
+	/*const_iterator& find(const T& value) {
+		Node* iter = head;
+		while (iter) {
+			if (iter->data == value) {
+				return true;
+			}
+			iter = iter->next;
+		}
+		const_iterator it(iter);
+		return it;
+	}*/
 	SList merge(SList& second);
 	void sort();
 	void inset_at(unsigned int at, T value);
@@ -114,9 +147,7 @@ public:
 
 private:
 	struct Node {
-		//Node() : next(nullptr) {
-//
-		//}
+
 		Node* next;
 		T data;
 	};
@@ -127,13 +158,12 @@ private:
 
 	Node* head;
 	unsigned int listLength;
-	Node* last;
 };
 
 
 template <typename T>
 SList<T>::SList() :
-	listLength(0), head(nullptr), last(nullptr)
+	listLength(0), head(nullptr)
 {}
 
 
@@ -248,18 +278,20 @@ bool SList<T>::erase(T value) {
 	delete iter;
 	return true;
 }
-template <typename T>
-bool SList<T>::find(T value) {
+//template <typename T>
+//bool SList<T>::find(T value) {
+//
+//	Node* iter = head;
+//	while (iter) {
+//		if (iter->data == value) {
+//			return true;
+//		}
+//		iter = iter->next;
+//	}
+//	return false;
+//}
 
-	Node* iter = head;
-	while (iter) {
-		if (iter->data == value) {
-			return true;
-		}
-		iter = iter->next;
-	}
-	return false;
-}
+
 
 template <typename T>
 SList<T> SList<T>::merge(SList& second) {

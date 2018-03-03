@@ -33,12 +33,7 @@ template<typename key_type, typename val_type,
 				bool operator==(const pair& rhs) {
 					return this->first == rhs.first;
 				}
-				//friend std::ostream& operator<<(std::ostream& os, const pair& p);
 			};
-
-			//std::ostream& operator<<(std::ostream& os, const pair& p) {
-				//return o << p.first << '(' << p.second << ')';
-			//}
 
 			std::vector< SList<pair> > map;
 			unsigned int elements;
@@ -89,7 +84,6 @@ template<typename key_type, typename val_type,
 					grow();
 				}
 			}
-
 
 			void erase(const val_type& value) {
 				if (empty()) {
@@ -177,3 +171,10 @@ template<typename key_type, typename val_type,
 	const unsigned int HashMap<key_type, val_type, prehash>::startingSize = 20;
 
 #endif
+	/*
+	Things that still need to be implemented:
+		1. Rvalue reference support
+		2. Iterator for map class
+		3. operator[]
+
+	*/
