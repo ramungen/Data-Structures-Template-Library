@@ -6,6 +6,13 @@
 #include <iterator>
 
 
+/*
+THINGS TO DO: 
+	1. Move all the methods inside the class to
+	save space and increase readability
+*/
+
+
 template <typename T>
 class SList {
 
