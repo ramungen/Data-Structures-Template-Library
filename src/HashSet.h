@@ -9,78 +9,17 @@
 #include <initializer_list>
 #include "SList.h"
 
-
-/*
-KNOWN BUGS:
-
-*/
 template <typename val_type, 
 	typename prehash = std::hash<val_type> >
 
 	class HashSet {
 
-	/*
-		NEED TO:
-		1. *DONE* keep track of the position of the first non-empty bucket
-		2. *DONE* keep track of the position of the last non-empty bucket
-		3. *DONE* update begin() and end()
-		*/
 	private:
+
 		typedef typename SList<val_type>::iterator list_iterator;
 
-
-		class Bucket {
-			/*
-			NEED TO :
-			*/
-		public:
-
-			val_type& data() {
-				return *bucket_iterator;
-			}
-			bool empty() {
-				if (bucket_list.begin() == bucket_list.end()) {
-					return true;
-				}
-				return false;
-			}
-
-			void push_front(const val_type& value) {
-				bucket_list.push_front(value);
-			}
-
-			bool erase(const val_type& value) {
-				return bucket_list.erase(value);
-			}
-
-
-			list_iterator find(const val_type& value) {
-				return bucket_list.find(value);
-			}
-
-			list_iterator last() {
-				return bucket_list.end();
-			}
-			
-			Bucket()
-			{}
-
-			Bucket(Bucket& other, list_iterator iter) : // needs replacing, inefficient
-			bucket_list(other.bucket_list),
-			bucket_iterator(iter)
-			{}
-
-			~Bucket() {}
-
-		public:
-			SList<val_type> bucket_list;
-			list_iterator bucket_iterator;
-
-		};
-
-	private:
 		
-		std::vector< Bucket > set;
+		std::vector< SList<val_type> > set;
 		unsigned int elements;
 		static const unsigned int startingSize;
 		prehash prehasher;
@@ -94,80 +33,116 @@ template <typename val_type,
 
 		template<typename val_type>
 		class forward_iterator :
-			public std::iterator<std::forward_iterator_tag, Bucket> {
+			public std::iterator<std::forward_iterator_tag, SList<val_type> > {
 			/*
 				THINGS TO DO:
-				1. make bucket_iterator from Bucket class a part of forward_iterator class
+				1. make a few constructors inaccessible outside HashSet class
 			*/
 		public:
+			forward_iterator() : 
+				ptr(nullptr), 
+				parent(nullptr),
+				pos(-1) 
+			{}
 
-			forward_iterator() : ptr(nullptr) {}
-			forward_iterator(pointer p) : ptr(p) {}
-			forward_iterator(reference p) : ptr(&p) {}
-			forward_iterator(const forward_iterator* rhs) : ptr(rhs->ptr) {}
-			forward_iterator(const forward_iterator& rhs) : ptr(rhs.ptr) {}
-			/*forward_iterator& operator=(const forward_iterator& rhs) {
-				ptr = rhs.ptr;
-				std::cout << "asfdf" << '\n';
-				return *this;
+			forward_iterator(const forward_iterator* rhs) :
+				ptr(rhs->ptr),
+				parent(rhs->parent),
+				ptr_it(rhs->ptr_it),
+				pos(rhs->pos)
+			{}
+			forward_iterator(const forward_iterator& rhs) :
+				ptr(rhs.ptr),
+				parent(rhs.parent),
+				ptr_it(rhs.ptr_it),
+				pos(rhs.pos)
+			{}
 
-			}*/
+			forward_iterator(pointer p, list_iterator liter, HashSet* prnt, long long int pos_) : ptr(p),
+				ptr_it(liter),
+				parent(prnt),
+				pos(pos_)
+			{}
+			forward_iterator(reference p, list_iterator liter, HashSet* prnt, long long int pos_) :
+				ptr(p),
+				ptr_it(liter),
+				parent(prnt),
+				pos(pos_)
+			{}
+
+		
+		public:
+			
+
 			forward_iterator& operator=(forward_iterator rhs) {
 				ptr = rhs.ptr;
+				ptr_it = rhs.ptr_it;
+				parent = rhs.parent;
+				pos = rhs.pos;
 				return *this;
 			}
 			forward_iterator operator++() {
 				if (ptr == nullptr) {
 					throw std::exception("error advancing end iterator");
 				}
-				if (ptr->bucket_iterator != ptr->bucket_list.end()) {
-					++(ptr->bucket_iterator);
+
+				if (ptr_it != ptr->end()) {
+					++(ptr_it);
 				}
-				if (ptr->bucket_iterator == ptr->bucket_list.end()) {
+				if (ptr_it == ptr->end()) {
+					++pos;
+					if (pos >= parent->set.size()) {
+						ptr = nullptr;
+						ptr_it = ptr->end();
+						return *this;
+					}
 					while (parent->set[pos].empty()) {
 						++pos;
-						if (pos == parent->size.size()) {
+						if (pos >= parent->set.size()) {
 							ptr = nullptr;
+							ptr_it = ptr->end();
 							return *this;
 						}
 					}
 					ptr = &(parent->set[pos]);
+					ptr_it = ptr->begin();
 				}
 
 				return *this;
 			}
-			forward_iterator operator++(int dum) {
+
+			forward_iterator operator++(int) {
 				if (ptr == nullptr) {
 					throw std::exception("error advancing end iterator");
 				}
 				forward_iterator temp(this);
-				++(this);
+				operator++();
 				return temp;
 			}
-			bool operator ==(const forward_iterator& rhs) const {
-				return ptr == rhs.ptr;
+			bool operator ==(const forward_iterator rhs) const {
+				return (ptr == rhs.ptr) && (ptr_it == rhs.ptr_it);
 			}
-			bool operator !=(const forward_iterator& rhs) const {
-				return ptr != rhs.ptr;
+			bool operator !=(const forward_iterator rhs) const {
+				return !(*this == rhs);
 			}
 			val_type& operator*() {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
-				return ptr->data();
+				return *ptr_it;
 			}
 			val_type& operator->() {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
-				return ptr->data();
+				return *ptr_it;
 			}
 
 		private:
 			pointer ptr;
 			list_iterator ptr_it;
 			HashSet* parent;
-			unsigned int pos;
+			long long int pos;
 		};
 
 
@@ -193,42 +168,87 @@ template <typename val_type,
 			: HashSet()
 
 		{
-			for (const auto& name : list) {
-				insert(name);
+			for (const auto& element : list) {
+				insert(element);
 			}
 		}
 
 		~HashSet() {
 
 		}
+		HashSet(const HashSet& oth) :
+			set(oth.set),
+			elements(oth.elements),
+			startingSize(oth.startingSize),
+			prehasher(oth.prehasher),
+			rand1(oth.rand1),
+			rand2(oth.rand2),
+			start_pos(oth.start_pos),
+			end_pos(oth.end_pos)
+		{}
+		HashSet(const HashSet&& oth) :
+			set(std::move(oth.set)),
+			elements(0),
+			startingSize(0),
+			rand1(0),
+			rand2(0),
+			start_pos(0),
+			end_pos(0)
+		{
+			std::swap(elements = oth.elements);
+			std::swap(startingSize, oth.startingSize);
+			std::swap(prehasher, oth.prehasher);
+			std::swap(rand1, oth.rand1);
+			std::swap(rand2, oth.rand2);
+			std::swap(start_pos, oth.start_pos);
+			std::swap(end_pos, oth.end_pos);
+		}
 
+		HashSet& operator=(const HashSet& rhs) {
+			set = rhs.set;
+			elements = rhs.elements;
+			startingSize = rhs.startingSize;
+			prahasher = rhs.prehasher;
+			rand1 = rhs.rand1;
+			rand2 = rhs.rand2;
+			start_pos = rhs.start_pos;
+			end_pos = rhs.end_pos;
+		}
+		HashSet& operator=(const HashSet&& rhs) {
+			set = std::move(rhs.set);
+			elements = rhs.elements;
+			startingSize = rhs.startingSize;
+			prahasher = rhs.prehasher;
+			rand1 = rhs.rand1;
+			rand2 = rhs.rand2;
+			start_pos = rhs.start_pos;
+			end_pos = rhs.end_pos;
+		}
 
-		iterator find(const val_type& value) {
+		iterator find(const val_type& value) { 
 			long long int prehashKey = prehasher(value);
 			long long int trueKey = hash(prehashKey, set.size());
 
-			list_iter = set[trueKey].find(value);
+			list_iterator list_iter = set[trueKey].find(value);
 			
-			if (list_iter == set[trueKey].last()) {
+			if (list_iter == set[trueKey].end()) {
 				return end();
 			}
 			else {
-				Bucket* temp_bucket(set[trueKey], list_iter); // might not work
-				iterator tmp(temp_bucket);
-				return tmp;
+				iterator temp(&set[trueKey], list_iter, this, trueKey);
+				return temp;
 			}
 		}
 
-		iterator end() { // try return iterator(); when have time
-			iterator last;
-			return last;
+		iterator end() {
+			return iterator();
 		}
 
-		void insert(const val_type& value) {
+		void insert(const val_type& value) { 
 			long long int prehashKey = prehasher(value);
 			long long int trueKey = hash(prehashKey, set.size());
 
-			if (set[trueKey].find(value) == set[0].last()) {
+			if (set[trueKey].find(value) == set[0].end()) {
 
 				update_start_and_end(trueKey);
 
@@ -237,9 +257,33 @@ template <typename val_type,
 				grow();
 			}
 		}
+		void insert(const val_type&& value) { // for testing now
+			long long int prehashKey = prehasher(value);
+			long long int trueKey = hash(prehashKey, set.size());
 
-		iterator begin() { 
-			iterator it(set[start_pos]);
+			if (set[trueKey].find(value) == set[0].end()) {
+
+				update_start_and_end(trueKey);
+				set[trueKey].push_front(std::move(value));
+				++elements;
+				grow();
+			}
+		}
+		void insert(const std::initializer_list<val_type>& list) {
+			for (const auto& element : list) {
+				insert(element);
+			}
+		}
+		void insert(const std::initializer_list<val_type>&& list) {
+			for (const auto& element : list) {
+				insert(std::move(element));
+			}
+		}
+		iterator begin() {
+			if (empty()) {
+				return end();
+			}
+			iterator it(&set[start_pos], set[start_pos].begin(), this, start_pos);
 			return it;
 		}
 
@@ -300,10 +344,10 @@ template <typename val_type,
 				return;
 			}
 			if (elements == 1) {
-				start_pos = last_pos;
+				start_pos = end_pos;
 				return;
 			}
-			while (start_pos < last_pos) {
+			while (start_pos < end_pos) {
 				if (set[++start_pos].empty() == false) {
 					return;
 				}
@@ -358,10 +402,9 @@ template <typename val_type,
 
 
 		void grow() { 
-			if (set.size() > elements) {
+			if (set.size() > (int)(0.75f * (float)elements)) {
 				return;
 			}
-
 			start_pos = 2147483647;
 			end_pos = -1;
 
