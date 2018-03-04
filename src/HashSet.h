@@ -12,10 +12,10 @@
 
 /*
 	THINGS TO DO:
-	1. add load factor
-	2. add .rehash() method
-	3. add .clear() method
-	4 add .reserve() method
+	1. *done* add load factor
+	2. *done* add .rehash() method
+	3. *done* add .clear() method
+	4  *done* add .reserve() method
 
 	5. ADD THE SAME FUNCTIONALITY TO HASH MAP
 */
@@ -31,12 +31,14 @@ template <typename val_type,
 		
 		std::vector< SList<val_type> > set;
 		unsigned int elements;
-		static const unsigned int startingSize;
+		static const unsigned int starting_size;
 		prehash prehasher;
 		int rand1, rand2;
 
 		int start_pos;
 		int end_pos;
+
+		float load_factor;
 	
 
 	private:
@@ -44,10 +46,8 @@ template <typename val_type,
 		template<typename val_type>
 		class forward_iterator :
 			public std::iterator<std::forward_iterator_tag, SList<val_type> > {
-			/*
-				THINGS TO DO:
-				1. make a few constructors inaccessible outside HashSet class
-			*/
+
+			friend class HashSet; // to access private constructors
 		public:
 			forward_iterator() : 
 				ptr(nullptr), 
@@ -68,6 +68,7 @@ template <typename val_type,
 				pos(rhs.pos)
 			{}
 
+		private:
 			forward_iterator(pointer p, list_iterator liter, HashSet* prnt, long long int pos_) : ptr(p),
 				ptr_it(liter),
 				parent(prnt),
@@ -161,12 +162,15 @@ template <typename val_type,
 		typedef forward_iterator<val_type> iterator;
 		typedef forward_iterator<const val_type> const_iterator;
 
-		HashSet() :
+		HashSet(float factor = 0.75f) :
+			load_factor(factor),
 			elements(0),
 			start_pos(2147483647),
 			end_pos(-1),
-			set(startingSize) {
-
+			set(starting_size) {
+			if (load_factor >= 1) {
+				load_factor = 0.75f; // default value
+			}
 			std::random_device rd;
 			std::mt19937 generator(rd());
 			std::uniform_int_distribution<int> U(20, 10000);
@@ -189,35 +193,43 @@ template <typename val_type,
 		HashSet(const HashSet& oth) :
 			set(oth.set),
 			elements(oth.elements),
-			startingSize(oth.startingSize),
 			prehasher(oth.prehasher),
 			rand1(oth.rand1),
 			rand2(oth.rand2),
 			start_pos(oth.start_pos),
 			end_pos(oth.end_pos)
-		{}
+		{
+			std::random_device rd;
+			std::mt19937 generator(rd());
+			std::uniform_int_distribution<int> U(20, 10000);
+			rand1 = U(generator);
+			rand2 = U(generator);
+		}
 		HashSet(const HashSet&& oth) :
 			set(std::move(oth.set)),
 			elements(0),
-			startingSize(0),
 			rand1(0),
 			rand2(0),
 			start_pos(0),
-			end_pos(0)
+			end_pos(0),
+			load_factor(0)
 		{
-			std::swap(elements = oth.elements);
-			std::swap(startingSize, oth.startingSize);
+
+			std::swap(load_factor, oth.load_factor);
+			std::swap(elements, oth.elements);
 			std::swap(prehasher, oth.prehasher);
 			std::swap(rand1, oth.rand1);
 			std::swap(rand2, oth.rand2);
 			std::swap(start_pos, oth.start_pos);
 			std::swap(end_pos, oth.end_pos);
+
 		}
 
 		HashSet& operator=(const HashSet& rhs) {
+			load_factor = rhs.load_factor;
 			set = rhs.set;
 			elements = rhs.elements;
-			startingSize = rhs.startingSize;
+			starting_size = rhs.starting_size;
 			prahasher = rhs.prehasher;
 			rand1 = rhs.rand1;
 			rand2 = rhs.rand2;
@@ -227,7 +239,6 @@ template <typename val_type,
 		HashSet& operator=(const HashSet&& rhs) {
 			set = std::move(rhs.set);
 			elements = rhs.elements;
-			startingSize = rhs.startingSize;
 			prahasher = rhs.prehasher;
 			rand1 = rhs.rand1;
 			rand2 = rhs.rand2;
@@ -267,7 +278,7 @@ template <typename val_type,
 				grow();
 			}
 		}
-		void insert(const val_type&& value) { // for testing now
+		void insert(const val_type&& value) { 
 			long long int prehashKey = prehasher(value);
 			long long int trueKey = hash(prehashKey, set.size());
 
@@ -336,6 +347,46 @@ template <typename val_type,
 		bool empty() {
 			return elements == 0;
 		}
+		void rehash(unsigned int n) {
+			if (n <= set.size()) {
+				return;
+			}
+			start_pos = 2147483647;
+			end_pos = -1;
+			int possibility = (int)((float)set.size() * 1.15f);
+			if (possibility > n) {
+				n = possibility;
+			}
+			std::vector<SList< val_type > > temp(n);
+			for (const auto& bucket : set) {
+				for (const auto& element : bucket) {
+
+					long long int prehashKey = prehasher(element);
+					long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
+
+					update_start_and_end(trueKey);
+
+					temp[trueKey].push_front(element);
+				}
+			}
+			set = std::move(temp);
+		}
+		void clear() {
+			std::vector<SList<val_type>> new_set(starting_size);
+			set = std::move(new_set);
+			elements = 0;
+			start_pos = 2147483647;
+			end_pos = -1;
+		}
+
+		void reserve(unsigned int n) {
+			if (n < (float)starting_size *load_factor) {
+				return;
+			}
+			unsigned int new_size = (unsigned int)((float)(n+1) / load_factor);
+			rehash(new_size);
+		}
+
 
 	private:
 
@@ -379,6 +430,8 @@ template <typename val_type,
 			}
 		}
 
+		
+
 
 		long long int hash(long long int prehashKey, size_t size) {
 			long long int oldKey = prehashKey;
@@ -391,7 +444,8 @@ template <typename val_type,
 		}
 
 		void shrink()  { 
-			if (set.size() > startingSize && set.size() >= elements * 4) {
+			if (set.size() > starting_size && set.size() >= elements * 4) {
+				std::cout << "SHRINKING: " << elements << '\n';
 				start_pos = 2147483647;
 				end_pos = -1;
 				std::vector<SList<val_type>> temp(set.size() / 2);
@@ -411,33 +465,32 @@ template <typename val_type,
 		}
 
 
-		void grow() { 
-			if (set.size() > (int)(0.75f * (float)elements)) {
-				return;
-			}
-			start_pos = 2147483647;
-			end_pos = -1;
+		void grow() { // testing
+		
+		
+			if((float)elements / set.size() >= load_factor) {
 
-			std::vector<SList< val_type > > temp(2 * set.size());
-			for (const auto& bucket : set) {
-				for (const auto& element : bucket) {
+				start_pos = 2147483647;
+				end_pos = -1;
 
-					long long int prehashKey = prehasher(element);
-					long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
+				std::vector<SList< val_type > > temp(2 * set.size());
+				for (const auto& bucket : set) {
+					for (const auto& element : bucket) {
 
-					update_start_and_end(trueKey);
+						long long int prehashKey = prehasher(element);
+						long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
 
-					temp[trueKey].push_front(element);
+						update_start_and_end(trueKey);
+
+						temp[trueKey].push_front(element);
+					}
 				}
+				set = std::move(temp);
 			}
-			set = std::move(temp);
-
 		}
-
-
 };
 
 template<typename val_type, typename prehash = PreHash<val_type> >
-const unsigned int HashSet<val_type, prehash>::startingSize = 20;
+const unsigned int HashSet<val_type, prehash>::starting_size = 20;
 
 #endif
