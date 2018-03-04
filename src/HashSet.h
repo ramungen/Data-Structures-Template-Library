@@ -2,7 +2,6 @@
 #ifndef HASHSET_H
 #define HASHSET_H
 
-#include <string>
 #include <vector>
 #include <algorithm>
 #include <random>
@@ -12,12 +11,8 @@
 
 /*
 	THINGS TO DO:
-	1. *done* add load factor
-	2. *done* add .rehash() method
-	3. *done* add .clear() method
-	4  *done* add .reserve() method
-
-	5. ADD THE SAME FUNCTIONALITY TO HASH MAP
+	1. ADD THE SAME FUNCTIONALITY TO HASH MAP
+	2. *done* MAKE ITERATOR RETURN VALUES NON MODIFIABLE 
 */
 template <typename val_type, 
 	typename prehash = std::hash<val_type> >
@@ -136,13 +131,13 @@ template <typename val_type,
 			bool operator !=(const forward_iterator rhs) const {
 				return !(*this == rhs);
 			}
-			val_type& operator*() {
+			const val_type& operator*() const {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
 				return *ptr_it;
 			}
-			val_type& operator->() {
+			const val_type& operator->() const {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
@@ -261,6 +256,14 @@ template <typename val_type,
 			}
 		}
 
+		iterator begin() {
+			if (empty()) {
+				return end();
+			}
+			iterator it(&set[start_pos], set[start_pos].begin(), this, start_pos);
+			return it;
+		}
+
 		iterator end() {
 			return iterator();
 		}
@@ -300,15 +303,7 @@ template <typename val_type,
 				insert(std::move(element));
 			}
 		}
-		iterator begin() {
-			if (empty()) {
-				return end();
-			}
-			iterator it(&set[start_pos], set[start_pos].begin(), this, start_pos);
-			return it;
-		}
-
-		public:
+		
 
 		void erase(const val_type& value) { 
 			if (empty()) {
@@ -375,7 +370,7 @@ template <typename val_type,
 			std::vector<SList<val_type>> new_set(starting_size);
 			set = std::move(new_set);
 			elements = 0;
-			start_pos = 2147483647;
+			start_pos = INT_MAX;
 			end_pos = -1;
 		}
 
@@ -445,7 +440,6 @@ template <typename val_type,
 
 		void shrink()  { 
 			if (set.size() > starting_size && set.size() >= elements * 4) {
-				std::cout << "SHRINKING: " << elements << '\n';
 				start_pos = 2147483647;
 				end_pos = -1;
 				std::vector<SList<val_type>> temp(set.size() / 2);
@@ -465,7 +459,7 @@ template <typename val_type,
 		}
 
 
-		void grow() { // testing
+		void grow() { 
 		
 		
 			if((float)elements / set.size() >= load_factor) {
