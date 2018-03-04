@@ -48,17 +48,17 @@ private:
 		bool operator !=(const forward_iterator& rhs) const {
 			return ptr != rhs.ptr;
 		}
-		T& operator*() {
+		T& operator*() const {
 			if (ptr == nullptr) {
 				throw std::exception("error dereferencing an invalid iterator");
 			}
 			return ptr->data;
 		}
-		T& operator->() {
+		T* operator->() const {
 			if (ptr == nullptr) {
 				throw std::exception("error dereferencing an invalid iterator");
 			}
-			return ptr->data;
+			return &ptr->data;
 		}
 
 	private:
@@ -196,8 +196,12 @@ public:
 		}
 		++listLength;
 	}
-	
+
+
 	bool erase(T value) {
+		if (head == nullptr) {
+			return false;
+		}
 		Node* iter = head;
 		if (head->data == value) {
 			if (head->next != nullptr) {
