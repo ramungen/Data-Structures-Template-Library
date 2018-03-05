@@ -8,25 +8,27 @@
 #include <vector>
 #include <iostream>
 #include <initializer_list>
-#include "SList.h"
 
-/*
-Things that still need to be implemented:
-1. Rvalue reference support
-2. Iterator for map class
-3. operator[]
 
-*/
+
 
 
 /*
  THINGS TO DO:
- 1. *done* track start and end positions
- 2. implement iterator support
- 3. replace contains() with find()
+ 1. implement iterator support
+ 2. replace contains() with find()
  3. add the same functionality as in set()
  4. make pair have std::pair member variable instead of first/second, so more efficient
  5. make key non-modifiable and value modifiable when accessing them via iterators
+ 6. implement load factor
+ 7. as of now const_iterator is non existant, need to make it
+*/
+
+/*
+Things to implement after those above:
+1. Rvalue reference support
+2. operator[]
+
 */
 
 template<typename key_type, typename val_type, 
@@ -34,39 +36,201 @@ template<typename key_type, typename val_type,
 
 	class HashMap {
 
+	private:
+
+		typedef typename std::pair<key_type, val_type> pair;
+
+
+		struct Node {
+
+			Node* next;
+			pair data;
+		};
+		
+
+		class bucket_iterator :
+			public std::iterator<std::forward_iterator_tag, Node > {
+
+		public:
+
+			bucket_iterator() : ptr(nullptr) {}
+			bucket_iterator(pointer p) : ptr(p) {}
+			bucket_iterator(reference p) : ptr(&p) {}
+			bucket_iterator(const bucket_iterator* source) : ptr(source->ptr) {}
+			bucket_iterator& operator=(const bucket_iterator& rhs) {
+
+				ptr = rhs.ptr;
+				return *this;
+			}
+			bucket_iterator& operator++() {
+				if (ptr == nullptr) {
+					throw std::exception("error advancing end iterator");
+				}
+				ptr = ptr->next;
+				return *this;
+			}
+			bucket_iterator operator++(int dum) {
+				if (ptr == nullptr) {
+					throw std::exception("error advancing end iterator");
+				}
+				forward_iterator temp(this);
+				ptr = ptr->next;
+				return temp;
+			}
+			bool operator ==(const bucket_iterator& rhs) const {
+				return ptr == rhs.ptr;
+			}
+			bool operator !=(const bucket_iterator& rhs) const {
+				return ptr != rhs.ptr;
+			}
+			pair& operator*() const {
+				if (ptr == nullptr) {
+					throw std::exception("error dereferencing an invalid iterator");
+				}
+				return ptr->data;
+			}
+			pair* operator->() const {
+				if (ptr == nullptr) {
+					throw std::exception("error dereferencing an invalid iterator");
+				}
+				return &ptr->data;
+			}
+
 		private:
+			pointer ptr;
+
+		};
+
+
+
+		class Bucket {
+			//friend  class bucket_iterator;
 			
-			
+		public:
 
-			struct pair { // std::pair class does not do the job because I would have to 
-						  //rewrite SList class to accept comparator
-				pair() {
-
-				}
-				~pair() {};
-				pair(const key_type& val) {
-					first = val;
-				}
-				pair(const std::pair<key_type, val_type>& elem) {
-					first = elem.first;
-					second = elem.second;
-				}
-				std::pair<key_type, val_type>& to_std_pair() {
-					return std::make_pair(first, second);
-				}
-				key_type first;
-				val_type second;
-				bool operator==(const pair& rhs) {
-					return first == rhs.first;
-				}
-				bool operator!=(const pair& rhs) {
-					return first != rhs.first;
-				}
-			};
-			typedef typename SList<pair>::iterator list_iterator;
+			bucket_iterator begin() {
+				return bucket_iterator(head);
+			}
 
 
-			std::vector< SList< pair > > map;
+			bucket_iterator end() {
+				return bucket_iterator();
+			}
+
+		
+			bucket_iterator find(const val_type& value) {
+
+				Node* iter = head;
+				while (iter) {
+					if (iter->data.first == value) {
+						return bucket_iterator(iter);
+					}
+					iter = iter->next;
+				}
+				bucket_iterator it(iter);
+				return it;
+			}
+			bool empty() {
+				return listLength == 0;
+			}
+
+			Bucket() :
+				listLength(0), head(nullptr)
+			{}
+
+			void push_front(const pair&& value) {
+				Node* temp = new Node;
+				temp->data = value;
+				temp->next = nullptr;
+				temp->next = head;
+				head = temp;
+				++listLength;
+			}
+
+
+			void push_front(const pair& value) {
+
+				Node* temp = new Node;
+				temp->data = value;
+				temp->next = nullptr;
+				temp->next = head;
+				head = temp;
+				++listLength;
+			}
+
+			bool erase(const val_type& value) {
+
+
+				if (head == nullptr) {
+					return false;
+				}
+				Node* iter = head;
+				if (head->data.first == value) {
+
+					if (head->next != nullptr) {
+						head = head->next;
+					}
+					else {
+
+						delete head;
+						head = nullptr;
+					}
+				}
+				else {
+					Node* prev = nullptr;
+					while (iter->data.first != value) {
+						if (iter->next == nullptr) {
+							return false;
+						}
+						prev = iter;
+						iter = iter->next;
+
+					}
+					prev->next = iter->next;
+				}
+				--listLength;
+				delete iter;
+				return true;
+			}
+
+			~Bucket() {
+				Node* next = nullptr;
+				if (head) {
+					next = head->next;
+					delete head;
+				}
+
+				Node* curr;
+				while (next) {
+					curr = next;
+					next = curr->next;
+					delete curr;
+				}
+			}
+
+
+			unsigned int size() {
+				return listLength;
+			}
+
+			void printMap() const {
+				Node* iter = head;
+				while (iter != nullptr) {
+					std::cout << iter->data.first << '(' << iter->data.second << ')' << " --> ";
+					iter = iter->next;
+				}
+				std::cout << "NULL\n";
+			}
+
+		private:
+
+			Node* head;
+			unsigned int listLength;
+
+		};
+
+
+			std::vector< Bucket > map;
 			unsigned int elements;
 			static const unsigned int starting_size;
 			prehash prehasher;
@@ -84,7 +248,7 @@ template<typename key_type, typename val_type,
 
 		template<typename key_type, typename val_type>
 		class forward_iterator :
-			public std::iterator<std::forward_iterator_tag, SList<pair> > {
+			public std::iterator<std::forward_iterator_tag, Bucket> {
 
 			friend class HashMap; // to access private constructors
 		public:
@@ -108,12 +272,12 @@ template<typename key_type, typename val_type,
 			{}
 
 		private:
-			forward_iterator(pointer p, list_iterator liter, HashMap* prnt, long long int pos_) : ptr(p),
+			forward_iterator(pointer p, bucket_iterator liter, HashMap* prnt, long long int pos_) : ptr(p),
 				ptr_it(liter),
 				parent(prnt),
 				pos(pos_)
 			{}
-			forward_iterator(reference p, list_iterator liter, HashMap* prnt, long long int pos_) :
+			forward_iterator(reference p, bucket_iterator liter, HashMap* prnt, long long int pos_) :
 				ptr(p),
 				ptr_it(liter),
 				parent(prnt),
@@ -176,29 +340,24 @@ template<typename key_type, typename val_type,
 				return !(*this == rhs);
 			}
 			std::pair<key_type, val_type>& operator*() const { // change
-				if (ptr == nullptr) {
+				if (ptr == nullptr || ptr_it == ptr->end()) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
-				std::pair<key_type, val_type> p;
-				p.first = ptr_it->first;
-				p.second = ptr_it->second;
 				
-				return p;
+				return *ptr_it;
 			}
 			std::pair<key_type, val_type>* operator->() const { // change
-				if (ptr == nullptr) {
+				if (ptr == nullptr || ptr_it == ptr->end()) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
-				std::pair<key_type, val_type> p;
-				p.first = ptr_it->first;
-				p.second = ptr_it->second;
-				return &p;
+				
+				return &(*ptr_it);
 			}
 
 		private:
 
 			pointer ptr;
-			list_iterator ptr_it;
+			bucket_iterator ptr_it;
 			HashMap* parent;
 			long long int pos;
 		};
@@ -206,10 +365,9 @@ template<typename key_type, typename val_type,
 
 	public:
 
+		typedef bucket_iterator local_iterator;
 		typedef forward_iterator<val_type, key_type> iterator;
 		typedef forward_iterator<val_type, const key_type> const_iterator;
-
-
 
 		public:
 
@@ -254,34 +412,34 @@ template<typename key_type, typename val_type,
 			bool contains(const key_type& value) { // deprecated
 				long long int prehashKey = prehasher(value);
 				long long int trueKey = hash(prehashKey, map.size());
-				pair p(value);
+	
 				return map[trueKey].find(p);
 			}
 
-			void insert(const std::pair<key_type, val_type>& elem) {
+			void insert(const pair& elem) { 
 				long long int prehashKey = prehasher(elem.first);
 				long long int trueKey = hash(prehashKey, map.size());
-				pair p(elem);
-				if (map[trueKey].find(p) == map[trueKey].end()) {
 
+				if (map[trueKey].find(elem.first) == map[trueKey].end()) {
 					update_start_and_end(trueKey);
 
-					map[trueKey].push_front(p);
+					map[trueKey].push_front(elem);
 					++elements;
 					grow();
 				}
+
 			}
 
-			void erase(const val_type& value) {
+
+			void erase(const val_type& value) { // needs reworking
 				if (empty()) {
 					return;
 				}
 
 				long long int prehashKey = prehasher(value);
 				long long int trueKey = hash(prehashKey, map.size());
-				pair p(value);
 				
-				if (map[trueKey].erase(p)) {
+				if (map[trueKey].erase(value)) {
 					--elements;
 
 					if (start_pos == trueKey) {
@@ -294,6 +452,8 @@ template<typename key_type, typename val_type,
 					shrink();
 				}
 			}
+
+			public:
 
 			unsigned int buckets() {
 				return (unsigned int)map.size();
@@ -367,14 +527,14 @@ template<typename key_type, typename val_type,
 				}
 
 				void shrink() { // need to implement load factor
-
+					// function might be broken (erase() does not work)
 					start_pos = 2147483647;
 					end_pos = -1;
 
 					if (map.size() > starting_size && map.size() >= elements * 4) {
-						std::vector<SList<pair>> temp(map.size() / 2);
-						for (const auto& bucket : map) {
-							for (const auto& element : bucket) {
+						std::vector<Bucket> temp(map.size() / 2);
+						for (auto& bucket : map) {			// const auto& does not work as of now
+							for (auto& element : bucket) {  // const auto& does not work as of now
 
 								long long int prehashKey = prehasher(element.first);
 								long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
@@ -397,9 +557,9 @@ template<typename key_type, typename val_type,
 					start_pos = 2147483647;
 					end_pos = -1;
 
-					std::vector<SList< pair > > temp(2 * map.size());
-					for (const auto& bucket : map) {
-						for (const auto& element : bucket) {
+					std::vector<Bucket > temp(2 * map.size());
+					for (auto& bucket : map) {			// const auto& does not work as of now
+						for (auto& element : bucket) {  // const auto& does not work as of now
 
 							long long int prehashKey = prehasher(element.first);
 							long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
