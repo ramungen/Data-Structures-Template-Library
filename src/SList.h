@@ -5,6 +5,10 @@
 #include <iostream>
 #include <iterator>
 
+/*
+ NEED TO :
+ 1. change iterator typedefs
+*/
 
 template <typename T>
 class SList {
@@ -182,7 +186,6 @@ public:
 		Node* temp = new Node;
 		temp->data = value;
 		temp->next = nullptr;
-		end_ = temp->next;
 		last = temp;
 		if (!head) {
 			head = temp;
@@ -373,6 +376,7 @@ private:
 private:
 
 	Node* head;
+	Node* last;
 	unsigned int listLength;
 };
 
