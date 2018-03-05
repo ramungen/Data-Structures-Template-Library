@@ -160,21 +160,12 @@ template<typename key_type, typename val_type,
 
 			bool erase(const val_type& value) {
 
-
 				if (head == nullptr) {
 					return false;
 				}
 				Node* iter = head;
 				if (head->data.first == value) {
-
-					if (head->next != nullptr) {
 						head = head->next;
-					}
-					else {
-
-						delete head;
-						head = nullptr;
-					}
 				}
 				else {
 					Node* prev = nullptr;
@@ -409,11 +400,27 @@ template<typename key_type, typename val_type,
 				return iterator();
 			}
 
-			bool contains(const key_type& value) { // deprecated
-				long long int prehashKey = prehasher(value);
-				long long int trueKey = hash(prehashKey, map.size());
+			//bool contains(const key_type& value) { // deprecated
+			//	long long int prehashKey = prehasher(value);
+			//	long long int trueKey = hash(prehashKey, map.size());
 	
-				return map[trueKey].find(p);
+			//	return map[trueKey].find(p);
+			//}
+
+
+			iterator find(const val_type& value) {
+				long long int prehashKey = prehasher(value);
+				long long int trueKey = hash(prehashKey, set.size());
+
+				list_iterator list_iter = set[trueKey].find(value);
+
+				if (list_iter == set[trueKey].end()) {
+					return end();
+				}
+				else {
+					iterator temp(&set[trueKey], list_iter, this, trueKey);
+					return temp;
+				}
 			}
 
 			void insert(const pair& elem) { 
@@ -431,7 +438,7 @@ template<typename key_type, typename val_type,
 			}
 
 
-			void erase(const val_type& value) { // needs reworking
+			void erase(const val_type& value) {
 				if (empty()) {
 					return;
 				}
@@ -440,6 +447,7 @@ template<typename key_type, typename val_type,
 				long long int trueKey = hash(prehashKey, map.size());
 				
 				if (map[trueKey].erase(value)) {
+
 					--elements;
 
 					if (start_pos == trueKey) {
@@ -527,11 +535,12 @@ template<typename key_type, typename val_type,
 				}
 
 				void shrink() { // need to implement load factor
-					// function might be broken (erase() does not work)
-					start_pos = 2147483647;
-					end_pos = -1;
 
 					if (map.size() > starting_size && map.size() >= elements * 4) {
+
+						start_pos = 2147483647;
+						end_pos = -1;
+
 						std::vector<Bucket> temp(map.size() / 2);
 						for (auto& bucket : map) {			// const auto& does not work as of now
 							for (auto& element : bucket) {  // const auto& does not work as of now

@@ -141,7 +141,7 @@ template <typename val_type,
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
-				return *ptr_it;
+				return &(*ptr_it);
 			}
 
 		private:
