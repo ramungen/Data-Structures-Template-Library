@@ -11,8 +11,8 @@
 
 /*
 	THINGS TO DO:
-	1. ADD THE SAME FUNCTIONALITY TO HASH MAP
-	2. *done* MAKE ITERATOR RETURN VALUES NON MODIFIABLE 
+	1. remove dependancy from SList.h
+	2. change return value of iterator operator ->
 */
 template <typename val_type, 
 	typename prehash = std::hash<val_type> >
