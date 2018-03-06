@@ -12,10 +12,8 @@
 
 
 /*
-Things to implement after those above:
-1. add rvalue reference support
-2. use inheritance to remove code similarities betweeh HashMap and HashSet
-3. optimize operator=
+THINGS TO DO:
+1. use inheritance to remove code similarities betweeh HashMap and HashSet
 
 */
 
