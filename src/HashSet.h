@@ -6,24 +6,208 @@
 #include <algorithm>
 #include <random>
 #include <initializer_list>
-#include "SList.h"
+
+
 
 
 /*
 	THINGS TO DO:
-	1. remove dependancy from SList.h
+	1. remove code similarities with HashMap via inheritance/composition
+	2. implement const_iterator
 */
 template <typename val_type, 
 	typename prehash = std::hash<val_type> >
 
 	class HashSet {
+	
+	private:
+
+		struct Node {
+
+			Node* next;
+			val_type data;
+		};
+
+		class bucket_iterator :
+			public std::iterator<std::forward_iterator_tag, Node> {
+
+		public:
+
+			bucket_iterator() : ptr(nullptr) {}
+			bucket_iterator(pointer p) : ptr(p) {}
+			bucket_iterator(reference p) : ptr(&p) {}
+			bucket_iterator(const bucket_iterator* source) : ptr(source->ptr) {}
+			bucket_iterator& operator=(const bucket_iterator& rhs) {
+
+				ptr = rhs.ptr;
+				return *this;
+			}
+			bucket_iterator& operator++() {
+				if (ptr == nullptr) {
+					throw std::exception("error advancing end iterator");
+				}
+				ptr = ptr->next;
+				return *this;
+			}
+			bucket_iterator operator++(int dum) {
+				if (ptr == nullptr) {
+					throw std::exception("error advancing end iterator");
+				}
+				forward_iterator temp(this);
+				ptr = ptr->next;
+				return temp;
+			}
+			bool operator ==(const bucket_iterator& rhs) const {
+				return ptr == rhs.ptr;
+			}
+			bool operator !=(const bucket_iterator& rhs) const {
+				return ptr != rhs.ptr;
+			}
+			val_type& operator*() const {
+				if (ptr == nullptr) {
+					throw std::exception("error dereferencing an invalid iterator");
+				}
+				return ptr->data;
+			}
+			val_type* operator->() const {
+				if (ptr == nullptr) {
+					throw std::exception("error dereferencing an invalid iterator");
+				}
+				return &ptr->data;
+			}
+
+		private:
+			pointer ptr;
+
+		};
+
+		class Bucket {
+
+		public:
+
+			bucket_iterator begin() {
+				return bucket_iterator(head);
+			}
+
+			bucket_iterator end() {
+				return bucket_iterator();
+			}
+
+			bool empty() {
+				return list_length == 0;
+			}
+			bucket_iterator find(const val_type& value) {
+
+				Node* iter = head;
+				while (iter) {
+					if (iter->data == value) {
+						return bucket_iterator(iter);
+					}
+					iter = iter->next;
+				}
+				bucket_iterator it(iter);
+				return it;
+			}
+
+			Bucket() :
+				list_length(0), head(nullptr)
+			{}
+
+			void push_front(val_type&& value) {
+				Node* temp = new Node;
+				temp->data = value;
+				temp->next = nullptr;
+				temp->next = head;
+				head = temp;
+				++list_length;
+			}
+
+
+			void push_front(const val_type& value) {
+
+				Node* temp = new Node;
+				temp->data = value;
+				temp->next = nullptr;
+				temp->next = head;
+				head = temp;
+				++list_length;
+			}
+
+		
+			bool erase(const val_type& value) {
+				if (head == nullptr) {
+					return false;
+				}
+				Node* iter = head;
+				if (head->data == value) {
+					if (head->next != nullptr) {
+						head = head->next;
+					}
+					else {
+						head = nullptr;
+					}
+				}
+				else {
+					Node* prev = nullptr;
+					while (iter->data != value) {
+						if (iter->next == nullptr) {
+							return false;
+						}
+						prev = iter;
+						iter = iter->next;
+
+					}
+					prev->next = iter->next;
+				}
+				--list_length;
+				delete iter;
+				return true;
+			}
+
+
+			~Bucket() {
+				Node* next = nullptr;
+				if (head) {
+					next = head->next;
+					delete head;
+				}
+				Node* curr;
+				while (next) {
+					curr = next;
+					next = curr->next;
+					delete curr;
+				}
+			}
+
+
+			unsigned int length() {
+				return list_length;
+			}
+
+
+			void print() const {
+				Node* iter = head;
+				while (iter != nullptr) {
+					std::cout << iter->data << " --> ";
+					iter = iter->next;
+				}
+				std::cout << "NULL\n";
+			}
+
+		private:
+
+			Node* head;
+			unsigned int list_length;
+		};
+
+
+
 
 	private:
 
-		typedef typename SList<val_type>::iterator list_iterator;
 
 		
-		std::vector< SList<val_type> > set;
+		std::vector< Bucket > set;
 		unsigned int elements;
 		static const unsigned int starting_size;
 		prehash prehasher;
@@ -39,7 +223,7 @@ template <typename val_type,
 
 		template<typename val_type>
 		class forward_iterator :
-			public std::iterator<std::forward_iterator_tag, SList<val_type> > {
+			public std::iterator<std::forward_iterator_tag, Bucket > {
 
 			friend class HashSet; // to access private constructors
 		public:
@@ -63,12 +247,12 @@ template <typename val_type,
 			{}
 
 		private:
-			forward_iterator(pointer p, list_iterator liter, HashSet* prnt, long long int pos_) : ptr(p),
+			forward_iterator(pointer p, bucket_iterator liter, HashSet* prnt, long long int pos_) : ptr(p),
 				ptr_it(liter),
 				parent(prnt),
 				pos(pos_)
 			{}
-			forward_iterator(reference p, list_iterator liter, HashSet* prnt, long long int pos_) :
+			forward_iterator(reference p, bucket_iterator liter, HashSet* prnt, long long int pos_) :
 				ptr(p),
 				ptr_it(liter),
 				parent(prnt),
@@ -145,7 +329,7 @@ template <typename val_type,
 
 		private:
 			pointer ptr;
-			list_iterator ptr_it;
+			bucket_iterator ptr_it;
 			HashSet* parent;
 			long long int pos;
 		};
@@ -159,12 +343,14 @@ template <typename val_type,
 		HashSet(float factor = 0.75f) :
 			load_factor(factor),
 			elements(0),
-			start_pos(2147483647),
+			start_pos(INT_MAX),
 			end_pos(-1),
 			set(starting_size) {
+
 			if (load_factor >= 1) {
 				load_factor = 0.75f; // default value
 			}
+
 			std::random_device rd;
 			std::mt19937 generator(rd());
 			std::uniform_int_distribution<int> U(20, 10000);
@@ -176,31 +362,29 @@ template <typename val_type,
 			: HashSet()
 
 		{
-			for (const auto& element : list) {
-				insert(element);
+			for (const auto& elem : list) {
+				insert(elem);
 			}
 		}
 
-		~HashSet() {
-
-		}
-		HashSet(const HashSet& oth) :
-			set(oth.set),
+		HashSet(HashSet& oth) :
 			elements(oth.elements),
 			prehasher(oth.prehasher),
 			rand1(oth.rand1),
 			rand2(oth.rand2),
 			start_pos(oth.start_pos),
-			end_pos(oth.end_pos)
+			end_pos(oth.end_pos),
+			set(oth.set.size())
 		{
-			std::random_device rd;
-			std::mt19937 generator(rd());
-			std::uniform_int_distribution<int> U(20, 10000);
-			rand1 = U(generator);
-			rand2 = U(generator);
+
+			for (auto& elem : oth) {
+
+				long long int hash_key = hash(elem, set.size());
+				set[hash_key].push_front(elem);
+			}
+
 		}
-		HashSet(const HashSet&& oth) :
-			set(std::move(oth.set)),
+		HashSet(HashSet&& oth) :
 			elements(0),
 			rand1(0),
 			rand2(0),
@@ -209,6 +393,7 @@ template <typename val_type,
 			load_factor(0)
 		{
 
+			set.swap(oth.set);
 			std::swap(load_factor, oth.load_factor);
 			std::swap(elements, oth.elements);
 			std::swap(prehasher, oth.prehasher);
@@ -219,38 +404,50 @@ template <typename val_type,
 
 		}
 
-		HashSet& operator=(const HashSet& rhs) {
+		HashSet& operator=(HashSet& rhs) { // needs optimizing
+
+			clear();
 			load_factor = rhs.load_factor;
-			set = rhs.set;
-			elements = rhs.elements;
-			starting_size = rhs.starting_size;
-			prahasher = rhs.prehasher;
+			prehasher = rhs.prehasher;
 			rand1 = rhs.rand1;
 			rand2 = rhs.rand2;
+			elements = rhs.elements;
 			start_pos = rhs.start_pos;
 			end_pos = rhs.end_pos;
+			
+			set.resize(rhs.set.size());
+
+			for (auto elem : rhs) {
+
+				long long int hash_key = hash(elem, set.size());
+				set[hash_key].push_front(elem);
+			}
+
+			return *this;
 		}
-		HashSet& operator=(const HashSet&& rhs) {
-			set = std::move(rhs.set);
-			elements = rhs.elements;
-			prahasher = rhs.prehasher;
+		HashSet& operator=(HashSet&& rhs) {
+			clear();
+			set.swap(rhs.set);
+			std::swap(elements, rhs.elements);
+			prehasher = rhs.prehasher;
 			rand1 = rhs.rand1;
 			rand2 = rhs.rand2;
-			start_pos = rhs.start_pos;
-			end_pos = rhs.end_pos;
+			std::swap(start_pos, rhs.start_pos);
+			std::swap(end_pos, rhs.end_pos);
+			return *this;
 		}
 
 		iterator find(const val_type& value) { 
-			long long int prehashKey = prehasher(value);
-			long long int trueKey = hash(prehashKey, set.size());
+			long long int prehash_key = prehasher(value);
+			long long int hash_key = hash(prehash_key, set.size());
 
-			list_iterator list_iter = set[trueKey].find(value);
+			list_iterator list_iter = set[hash_key].find(value);
 			
-			if (list_iter == set[trueKey].end()) {
+			if (list_iter == set[hash_key].end()) {
 				return end();
 			}
 			else {
-				iterator temp(&set[trueKey], list_iter, this, trueKey);
+				iterator temp(&set[hash_key], list_iter, this, hash_key);
 				return temp;
 			}
 		}
@@ -268,26 +465,26 @@ template <typename val_type,
 		}
 
 		void insert(const val_type& value) { 
-			long long int prehashKey = prehasher(value);
-			long long int trueKey = hash(prehashKey, set.size());
+			long long int prehash_key = prehasher(value);
+			long long int hash_key = hash(prehash_key, set.size());
 
-			if (set[trueKey].find(value) == set[0].end()) {
+			if (set[hash_key].find(value) == set[0].end()) {
 
-				update_start_and_end(trueKey);
+				update_start_and_end(hash_key);
 
-				set[trueKey].push_front(value);
+				set[hash_key].push_front(value);
 				++elements;
 				grow();
 			}
 		}
 		void insert(const val_type&& value) { 
-			long long int prehashKey = prehasher(value);
-			long long int trueKey = hash(prehashKey, set.size());
+			long long int prehash_key = prehasher(value);
+			long long int hash_key = hash(prehash_key, set.size());
 
-			if (set[trueKey].find(value) == set[0].end()) {
+			if (set[hash_key].find(value) == set[hash_key].end()) {
 
-				update_start_and_end(trueKey);
-				set[trueKey].push_front(std::move(value));
+				update_start_and_end(hash_key);
+				set[hash_key].push_front(std::move(value));
 				++elements;
 				grow();
 			}
@@ -309,14 +506,14 @@ template <typename val_type,
 				return;
 			}
 
-			long long int prehashKey = prehasher(value);
-			long long int trueKey = hash(prehashKey, set.size());
-			if (set[trueKey].erase(value)) {
+			long long int prehash_key = prehasher(value);
+			long long int hash_key = hash(prehash_key, set.size());
+			if (set[hash_key].erase(value)) {
 				--elements;
-				if (start_pos == trueKey) {
+				if (start_pos == hash_key) {
 					update_start_pos();
 				}
-				if (end_pos == trueKey) {
+				if (end_pos == hash_key) {
 					update_end_pos();
 				}
 				shrink();
@@ -351,22 +548,22 @@ template <typename val_type,
 			if (possibility > n) {
 				n = possibility;
 			}
-			std::vector<SList< val_type > > temp(n);
+			std::vector<Bucket > (n);
 			for (const auto& bucket : set) {
 				for (const auto& element : bucket) {
 
-					long long int prehashKey = prehasher(element);
-					long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
+					long long int prehash_key = prehasher(element);
+					long long int hash_key = hash(prehash_key, (unsigned int)temp.size());
 
-					update_start_and_end(trueKey);
+					update_start_and_end(hash_key);
 
-					temp[trueKey].push_front(element);
+					temp[hash_key].push_front(element);
 				}
 			}
 			set = std::move(temp);
 		}
 		void clear() {
-			std::vector<SList<val_type>> new_set(starting_size);
+			std::vector<Bucket> new_set(starting_size);
 			set = std::move(new_set);
 			elements = 0;
 			start_pos = INT_MAX;
@@ -384,12 +581,12 @@ template <typename val_type,
 
 	private:
 
-		void update_start_and_end(long long int trueKey) {
-			if (start_pos > trueKey) {
-				start_pos = trueKey;
+		void update_start_and_end(long long int hash_key) {
+			if (start_pos > (int)hash_key) {
+				start_pos = (int)hash_key;
 			}
-			if (end_pos < trueKey) {
-				end_pos = trueKey;
+			if (end_pos < hash_key) {
+				end_pos = hash_key;
 			}
 		}
 
@@ -427,30 +624,30 @@ template <typename val_type,
 		
 
 
-		long long int hash(long long int prehashKey, size_t size) {
-			long long int oldKey = prehashKey;
+		long long int hash(long long int prehash_key, size_t size) {
+			long long int oldKey = prehash_key;
 			int prime = 8188057;
 
-			long long int trueKey = (rand1 * oldKey + rand2);
-			trueKey %= prime;
-			trueKey %= size;
-			return trueKey;
+			long long int hash_key = (rand1 * oldKey + rand2);
+			hash_key %= prime;
+			hash_key %= size;
+			return hash_key;
 		}
 
 		void shrink()  { 
 			if (set.size() > starting_size && (float)set.size() * load_factor >= elements * 4) {
 				start_pos = 2147483647;
 				end_pos = -1;
-				std::vector<SList<val_type>> temp(set.size() / 2);
-				for (const auto& bucket : set) {
-					for (const auto& element : bucket) {
+				std::vector<Bucket> temp(set.size() / 2);
+				for (auto& bucket : set) {
+					for (auto& element : bucket) {
 
-						long long int prehashKey = prehasher(element);
-						long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
+						long long int prehash_key = prehasher(element);
+						long long int hash_key = hash(prehash_key, (unsigned int)temp.size());
 
-						update_start_and_end(trueKey);
+						update_start_and_end(hash_key);
 
-						temp[trueKey].push_front(element);
+						temp[hash_key].push_front(element);
 					}
 				}
 				set = std::move(temp);
@@ -466,16 +663,16 @@ template <typename val_type,
 				start_pos = 2147483647;
 				end_pos = -1;
 
-				std::vector<SList< val_type > > temp(2 * set.size());
-				for (const auto& bucket : set) {
-					for (const auto& element : bucket) {
+				std::vector<Bucket > temp(2 * set.size());
+				for (auto& bucket : set) {
+					for (auto& element : bucket) {
 
-						long long int prehashKey = prehasher(element);
-						long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
+						long long int prehash_key = prehasher(element);
+						long long int hash_key = hash(prehash_key, (unsigned int)temp.size());
 
-						update_start_and_end(trueKey);
+						update_start_and_end(hash_key);
 
-						temp[trueKey].push_front(element);
+						temp[hash_key].push_front(element);
 					}
 				}
 				set = std::move(temp);

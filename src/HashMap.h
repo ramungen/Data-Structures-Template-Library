@@ -13,8 +13,8 @@
 
 /*
 THINGS TO DO:
-1. use inheritance to remove code similarities betweeh HashMap and HashSet
-
+1. remove code similarities with HashSet via inheritance/composition
+2. implement const_iterator
 */
 
 template<typename key_type, typename val_type, 
@@ -450,7 +450,7 @@ template<typename key_type, typename val_type,
 		}
 
 		HashMap& operator=( HashMap& rhs) { // needs optimizing
-
+			clear();
 			load_factor = rhs.load_factor;
 			prehasher = rhs.prehasher;
 			rand1 = rhs.rand1;
@@ -458,7 +458,7 @@ template<typename key_type, typename val_type,
 			elements = rhs.elements;
 			start_pos = rhs.start_pos;
 			end_pos = rhs.end_pos;
-			clear();
+			
 			map.resize(rhs.map.size());
 			for (auto& elem : rhs) {
 
