@@ -11,23 +11,10 @@
 
 
 
-
-
-/*
- THINGS TO DO:
- 1. implement iterator support
- 2. replace contains() with find()
- 3. add the same functionality as in set()
- 4. make pair have std::pair member variable instead of first/second, so more efficient
- 5. make key non-modifiable and value modifiable when accessing them via iterators
- 6. implement load factor
- 7. as of now const_iterator is non existant, need to make it
-*/
-
 /*
 Things to implement after those above:
-1. Rvalue reference support
-2. operator[]
+1. add rvalue reference support
+2. use inheritance to remove code similarities betweeh HashMap and HashSet
 
 */
 
@@ -38,15 +25,22 @@ template<typename key_type, typename val_type,
 
 	private:
 
-		typedef typename std::pair<key_type, val_type> pair;
+		typedef typename std::pair<const key_type, val_type> pair;
+
 
 
 		struct Node {
+			
+			Node(const key_type& first, const val_type& second) :
+				data(first, second),
+				next(nullptr)
+			{
 
+			}
 			Node* next;
 			pair data;
 		};
-		
+
 
 		class bucket_iterator :
 			public std::iterator<std::forward_iterator_tag, Node > {
@@ -104,8 +98,7 @@ template<typename key_type, typename val_type,
 
 
 		class Bucket {
-			//friend  class bucket_iterator;
-			
+
 		public:
 
 			bucket_iterator begin() {
@@ -117,7 +110,7 @@ template<typename key_type, typename val_type,
 				return bucket_iterator();
 			}
 
-		
+
 			bucket_iterator find(const val_type& value) {
 
 				Node* iter = head;
@@ -131,31 +124,59 @@ template<typename key_type, typename val_type,
 				return it;
 			}
 			bool empty() {
-				return listLength == 0;
+				return list_length == 0;
 			}
 
 			Bucket() :
-				listLength(0), head(nullptr)
+				list_length(0), head(nullptr)
 			{}
 
 			void push_front(const pair&& value) {
-				Node* temp = new Node;
-				temp->data = value;
+
+				Node* temp = new Node(value.first, value.second);
 				temp->next = nullptr;
 				temp->next = head;
 				head = temp;
-				++listLength;
+				++list_length;
+			}
+
+			val_type& create_if_not_found(const key_type& key) {
+				if (head == nullptr) {
+					val_type new_value;
+					if (std::is_arithmetic<val_type>::value == true) { // custom constructs only arithmetic types
+						new_value = 0;
+					}
+					Node* new_node = new Node(key, new_value);
+					head = new_node;
+					head->next = nullptr;
+					++list_length;
+					return head->data.second;
+				}
+				Node* iter = head;
+				while (iter->next != nullptr) {
+					if (iter->data.first == key) {
+						return iter->data.second;
+					}
+				}
+				val_type new_value;
+				if (std::is_arithmetic<val_type>::value == true) { // custom constructs only arithmetic types
+					new_value = 0;
+				}
+
+				Node* new_node = new Node(key, new_value);
+				iter->next = new_node;
+				++list_length;
+				return new_node->data.second;
 			}
 
 
 			void push_front(const pair& value) {
 
-				Node* temp = new Node;
-				temp->data = value;
+				Node* temp = new Node(value.first, value.second);
 				temp->next = nullptr;
 				temp->next = head;
 				head = temp;
-				++listLength;
+				++list_length;
 			}
 
 			bool erase(const val_type& value) {
@@ -165,7 +186,7 @@ template<typename key_type, typename val_type,
 				}
 				Node* iter = head;
 				if (head->data.first == value) {
-						head = head->next;
+					head = head->next;
 				}
 				else {
 					Node* prev = nullptr;
@@ -179,7 +200,7 @@ template<typename key_type, typename val_type,
 					}
 					prev->next = iter->next;
 				}
-				--listLength;
+				--list_length;
 				delete iter;
 				return true;
 			}
@@ -201,7 +222,7 @@ template<typename key_type, typename val_type,
 
 
 			unsigned int size() {
-				return listLength;
+				return list_length;
 			}
 
 			void printMap() const {
@@ -216,28 +237,27 @@ template<typename key_type, typename val_type,
 		private:
 
 			Node* head;
-			unsigned int listLength;
+			unsigned int list_length;
 
 		};
 
 
-			std::vector< Bucket > map;
-			unsigned int elements;
-			static const unsigned int starting_size;
-			prehash prehasher;
-			int rand1, rand2;
+		std::vector< Bucket > map;
+		unsigned int elements;
+		static const unsigned int starting_size;
+		prehash prehasher;
+		int rand1, rand2;
 
-			int start_pos; 
-			int end_pos;
+		int start_pos;
+		int end_pos;
 
-			float load_factor; // not implemented yet
+		float load_factor; 
 
 
 
 
 	private:
 
-		template<typename key_type, typename val_type>
 		class forward_iterator :
 			public std::iterator<std::forward_iterator_tag, Bucket> {
 
@@ -286,7 +306,7 @@ template<typename key_type, typename val_type,
 				pos = rhs.pos;
 				return *this;
 			}
-			forward_iterator operator++() { 
+			forward_iterator operator++() {
 				if (ptr == nullptr) {
 					throw std::exception("error advancing end iterator");
 				}
@@ -296,14 +316,14 @@ template<typename key_type, typename val_type,
 				}
 				if (ptr_it == ptr->end()) {
 					++pos;
-					if (pos >= parent->map.size()) {
+					if (pos > parent->end_pos) {
 						ptr = nullptr;
 						ptr_it = ptr->end();
 						return *this;
 					}
 					while (parent->map[pos].empty()) {
 						++pos;
-						if (pos >= parent->map.size()) {
+						if (pos > parent->end_pos) {
 							ptr = nullptr;
 							ptr_it = ptr->end();
 							return *this;
@@ -330,18 +350,18 @@ template<typename key_type, typename val_type,
 			bool operator !=(const forward_iterator rhs) const {
 				return !(*this == rhs);
 			}
-			std::pair<key_type, val_type>& operator*() const { // change
+			std::pair<const key_type, val_type>& operator*() const { // change
 				if (ptr == nullptr || ptr_it == ptr->end()) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
-				
+
 				return *ptr_it;
 			}
-			std::pair<key_type, val_type>* operator->() const { // change
+			std::pair<const key_type, val_type>* operator->() const { // change
 				if (ptr == nullptr || ptr_it == ptr->end()) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
-				
+
 				return &(*ptr_it);
 			}
 
@@ -354,114 +374,199 @@ template<typename key_type, typename val_type,
 		};
 
 
+
 	public:
 
 		typedef bucket_iterator local_iterator;
-		typedef forward_iterator<val_type, key_type> iterator;
-		typedef forward_iterator<val_type, const key_type> const_iterator;
-
-		public:
+		typedef typename HashMap<key_type, val_type>::forward_iterator iterator;
 
 
-			HashMap() :
-				elements(0),
-				start_pos(INT_MAX),
-				end_pos(-1),
-				map(starting_size) {
 
-				std::random_device rd;
-				std::mt19937 generator(rd());
-				std::uniform_int_distribution<int> U(20, 10000);
-				rand1 = U(generator);
-				rand2 = U(generator);
+		HashMap(float factor = 0.75f) :
+			load_factor(factor),
+			elements(0),
+			start_pos(INT_MAX),
+			end_pos(-1),
+			map(starting_size) {
+
+			if (load_factor >= 1) {
+				load_factor = 0.75f; // default value
 			}
 
-			HashMap(const std::initializer_list<std::pair<key_type, val_type> >& list)
-				: HashMap()
+			std::random_device rd;
+			std::mt19937 generator(rd());
+			std::uniform_int_distribution<int> U(20, 10000);
+			rand1 = U(generator);
+			rand2 = U(generator);
+		}
 
-			{
-				for (const auto& elem : list) {
-					insert(elem);
+		HashMap(const std::initializer_list<std::pair<key_type, val_type> >& list)
+			: HashMap()
+
+		{
+			for (const auto& elem : list) {
+				insert(elem);
+			}
+		}
+
+		~HashMap() {
+
+		}
+
+		iterator begin() {
+			if (empty()) {
+				return end();
+			}
+			iterator it(&map[start_pos], map[start_pos].begin(), this, start_pos);
+			return it;
+		}
+		iterator end() {
+			return iterator();
+		}
+
+
+
+
+		iterator find(const val_type& key) {
+			
+			long long int hash_key = hash(map.size(), key);
+
+			bucket_iterator list_iter = map[hash_key].find(key);
+
+			if (list_iter == map[hash_key].end()) {
+				return end();
+			}
+			else {
+				return iterator(&map[hash_key], list_iter, this, hash_key);
+			}
+		}
+
+		val_type& at(const key_type& key) {
+			
+			long long int hash_key = hash(map.size(), key);
+
+			bucket_iterator list_iter = map[hash_key].find(key);
+
+			if (list_iter == map[hash_key].end()) {
+				throw std::exception("element not found in the container");
+			}
+			return (*list_iter).second;
+		}
+
+		void insert(const pair& elem) {
+
+			long long int hash_key = hash(map.size(), elem.first);
+
+			if (map[hash_key].find(elem.first) == map[hash_key].end()) {
+				update_start_and_end(hash_key);
+
+				map[hash_key].push_front(elem);
+				++elements;
+				grow();
+			}
+
+		}
+
+		size_t count(const key_type& key) {
+			
+			return (find(key) != end()) ? 1 : 0;
+		}
+
+		val_type& operator[](const key_type& key) {
+
+			long long int hash_key = hash(map.size(), key);
+
+			return map[hash_key].create_if_not_found(key);
+
+		}
+
+
+		void erase(const key_type& key) {
+			if (empty()) {
+				return;
+			}
+
+			long long int hash_key = hash(map.size(), key);
+
+			if (map[hash_key].erase(key)) {
+
+				--elements;
+
+				if (start_pos == hash_key) {
+					update_start_pos();
 				}
-			}
-
-			~HashMap() {
-
-			}
-
-			iterator begin() {
-				if (empty()) {
-					return end();
-				}
-				iterator it(&map[start_pos], map[start_pos].begin(), this, start_pos);
-				return it;
-			}
-			iterator end() {
-				return iterator();
-			}
-
-			//bool contains(const key_type& value) { // deprecated
-			//	long long int prehashKey = prehasher(value);
-			//	long long int trueKey = hash(prehashKey, map.size());
-	
-			//	return map[trueKey].find(p);
-			//}
-
-
-			iterator find(const val_type& value) {
-				long long int prehashKey = prehasher(value);
-				long long int trueKey = hash(prehashKey, set.size());
-
-				list_iterator list_iter = set[trueKey].find(value);
-
-				if (list_iter == set[trueKey].end()) {
-					return end();
-				}
-				else {
-					iterator temp(&set[trueKey], list_iter, this, trueKey);
-					return temp;
-				}
-			}
-
-			void insert(const pair& elem) { 
-				long long int prehashKey = prehasher(elem.first);
-				long long int trueKey = hash(prehashKey, map.size());
-
-				if (map[trueKey].find(elem.first) == map[trueKey].end()) {
-					update_start_and_end(trueKey);
-
-					map[trueKey].push_front(elem);
-					++elements;
-					grow();
+				if (end_pos == hash_key) {
+					update_end_pos();
 				}
 
+				shrink();
+			}
+		}
+
+
+		void rehash(unsigned int n) {
+			if (n <= elements) {
+				return;
+			}
+			else if (n < map.size() && load_factor * 0.8 >= (float)elements / n) {
+				
+				start_pos = 2147483647;
+				end_pos = -1;
+
+				std::vector<Bucket> temp(n);
+				for (auto& bucket : map) {
+					for (auto& element : bucket) {
+
+						//long long int prehashKey = prehasher(element.first);
+						long long int hash_key = hash(temp.size(), element.first);
+
+						update_start_and_end(hash_key);
+
+						temp[key].push_front(element);
+					}
+				}
+
+				map = std::move(temp);
+			}
+			else {
+
+				start_pos = INT_MAX;
+				end_pos = -1;
+				int possibility = (int)((float)map.size() * 1.15f);
+				if (possibility > n) {
+					n = possibility;
+				}
+				std::vector< Bucket > temp(n);
+				for (auto& bucket : map) {
+					for (auto& element : bucket) {
+
+						//long long int prehashKey = prehasher(element.first);
+						long long int key = hash(temp.size(), element.first);
+
+						update_start_and_end(key);
+
+						temp[key].push_front(element);
+					}
+				}
+				map = std::move(temp);
+			}
+		}
+			void clear() {
+				std::vector< Bucket > new_map(starting_size);
+				map = std::move(new_map);
+				elements = 0;
+				start_pos = INT_MAX;
+				end_pos = -1;
 			}
 
-
-			void erase(const val_type& value) {
-				if (empty()) {
+			void reserve(unsigned int n) {
+				if (n < starting_size) {
 					return;
 				}
-
-				long long int prehashKey = prehasher(value);
-				long long int trueKey = hash(prehashKey, map.size());
-				
-				if (map[trueKey].erase(value)) {
-
-					--elements;
-
-					if (start_pos == trueKey) {
-						update_start_pos();
-					}
-					if (end_pos == trueKey) {
-						update_end_pos();
-					}
-
-					shrink();
-				}
+				unsigned int new_size = (unsigned int)((float)(n + 1) / load_factor);
+				rehash(new_size);
 			}
 
-			public:
 
 			unsigned int buckets() {
 				return (unsigned int)map.size();
@@ -484,12 +589,12 @@ template<typename key_type, typename val_type,
 
 			private:
 
-				void update_start_and_end(long long int trueKey) {
-					if (start_pos > trueKey) {
-						start_pos = trueKey;
+				void update_start_and_end(long long int hash_key) {
+					if (start_pos > hash_key) {
+						start_pos = (int)hash_key;
 					}
-					if (end_pos < trueKey) {
-						end_pos = trueKey;
+					if (end_pos < hash_key) {
+						end_pos = (int)hash_key;
 					}
 				}
 
@@ -524,63 +629,63 @@ template<typename key_type, typename val_type,
 					}
 				}
 
-				long long int hash(long long int prehashKey, size_t size) {
-					long long int oldKey = prehashKey;
-					int prime = 8188057;
+				long long int hash(size_t size, const key_type& key) {
 
-					long long int trueKey = (rand1 * oldKey + rand2);
-					trueKey %= prime;
-					trueKey %= size;
-					return trueKey;
+					long long int prehash_key = prehasher(key);
+					int prime = 8188057;
+					
+					long long int new_key = (rand1 * prehash_key + rand2);
+					new_key %= prime;
+					new_key %= size;
+					return new_key;
 				}
 
-				void shrink() { // need to implement load factor
+				void shrink() { 
 
-					if (map.size() > starting_size && map.size() >= elements * 4) {
+					if (map.size() > starting_size && (float)map.size() * load_factor >= elements * 4) {
 
 						start_pos = 2147483647;
 						end_pos = -1;
 
-						std::vector<Bucket> temp(map.size() / 2);
-						for (auto& bucket : map) {			// const auto& does not work as of now
-							for (auto& element : bucket) {  // const auto& does not work as of now
+						std::vector<Bucket> temp((int)((float)map.size() * load_factor / 2));
+						for (auto& bucket : map) {			
+							for (auto& element : bucket) {  
 
-								long long int prehashKey = prehasher(element.first);
-								long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
+								long long int hash_key = hash(temp.size(), element.first);
 
-								update_start_and_end(trueKey);
+								update_start_and_end(hash_key);
 
-								temp[trueKey].push_front(element);
+								temp[hash_key].push_front(element);
 							}
 						}
+	
 						map = std::move(temp);
 					}
 				}
 
 
-				void grow() { // need to implement load factor
-					if (map.size() > elements) {
-						return;
-					}
+				void grow() { 
 
-					start_pos = 2147483647;
-					end_pos = -1;
+					if ((float)elements / map.size() >= load_factor) {
 
-					std::vector<Bucket > temp(2 * map.size());
-					for (auto& bucket : map) {			// const auto& does not work as of now
-						for (auto& element : bucket) {  // const auto& does not work as of now
+						start_pos = 2147483647;
+						end_pos = -1;
 
-							long long int prehashKey = prehasher(element.first);
-							long long int trueKey = hash(prehashKey, (unsigned int)temp.size());
+						std::vector<Bucket > temp(2 * map.size());
+						for (auto& bucket : map) {			
+							for (auto& element : bucket) {  
 
-							update_start_and_end(trueKey);
+								long long int hash_key = hash(temp.size(), element.first);
+
+								update_start_and_end(hash_key);
 
 
-							temp[trueKey].push_front(element);
+								temp[hash_key].push_front(element);
+							}
 						}
-					}
-					map = std::move(temp);
+						map = std::move(temp);
 
+					}
 				}
 
 	};
