@@ -15,6 +15,7 @@
 Things to implement after those above:
 1. add rvalue reference support
 2. use inheritance to remove code similarities betweeh HashMap and HashSet
+3. optimize operator=
 
 */
 
@@ -30,7 +31,12 @@ template<typename key_type, typename val_type,
 
 
 		struct Node {
-			
+			Node(pair&& elem) :
+			data(std::move(elem)),
+			next(nullptr)
+			{
+
+			}
 			Node(const key_type& first, const val_type& second) :
 				data(first, second),
 				next(nullptr)
@@ -131,9 +137,9 @@ template<typename key_type, typename val_type,
 				list_length(0), head(nullptr)
 			{}
 
-			void push_front(const pair&& value) {
+			void push_front(pair&& value) {
 
-				Node* temp = new Node(value.first, value.second);
+				Node* temp = new Node(std::move(value));
 				temp->next = nullptr;
 				temp->next = head;
 				head = temp;
@@ -409,6 +415,73 @@ template<typename key_type, typename val_type,
 			}
 		}
 
+		HashMap(HashMap& oth) :
+			elements(oth.elements),
+			prehasher(oth.prehasher),
+			rand1(oth.rand1),
+			rand2(oth.rand2),
+			start_pos(oth.start_pos),
+			end_pos(oth.end_pos),
+			map(oth.map.size())
+		{
+
+			for (auto& elem : oth) {
+
+				long long int hash_key = hash(map.size(), elem.first);
+				map[hash_key].push_front(elem);
+			}
+
+		}
+		HashMap(HashMap&& oth) :
+			elements(0),
+			rand1(0),
+			rand2(0),
+			start_pos(0),
+			end_pos(0),
+			load_factor(0)
+		{
+			map.swap(oth.map);
+			std::swap(load_factor, oth.load_factor);
+			std::swap(elements, oth.elements);
+			std::swap(prehasher, oth.prehasher);
+			std::swap(rand1, oth.rand1);
+			std::swap(rand2, oth.rand2);
+			std::swap(start_pos, oth.start_pos);
+			std::swap(end_pos, oth.end_pos);
+
+		}
+
+		HashMap& operator=( HashMap& rhs) { // needs optimizing
+
+			load_factor = rhs.load_factor;
+			prehasher = rhs.prehasher;
+			rand1 = rhs.rand1;
+			rand2 = rhs.rand2;
+			elements = rhs.elements;
+			start_pos = rhs.start_pos;
+			end_pos = rhs.end_pos;
+			clear();
+			map.resize(rhs.map.size());
+			for (auto& elem : rhs) {
+
+				long long int hash_key = hash(map.size(), elem.first);
+				map[hash_key].push_front(elem);
+			}
+
+			return *this;
+		}
+		HashMap& operator=(HashMap&& rhs) { 
+			clear();
+			map.swap(rhs.map);
+			std::swap(elements, rhs.elements);
+			prehasher = rhs.prehasher;
+			rand1 = rhs.rand1;
+			rand2 = rhs.rand2;
+			std::swap(start_pos, rhs.start_pos);
+			std::swap(end_pos, rhs.end_pos);
+			return *this;
+		}
+
 		~HashMap() {
 
 		}
@@ -452,7 +525,17 @@ template<typename key_type, typename val_type,
 			}
 			return (*list_iter).second;
 		}
+		void insert(pair&& elem) {
+			long long int hash_key = hash(map.size(), elem.first);
 
+			if (map[hash_key].find(elem.first) == map[hash_key].end()) {
+				update_start_and_end(hash_key);
+
+				map[hash_key].push_front(std::forward<pair>(elem));
+				++elements;
+				grow();
+			}
+		}
 		void insert(const pair& elem) {
 
 			long long int hash_key = hash(map.size(), elem.first);
@@ -465,6 +548,12 @@ template<typename key_type, typename val_type,
 				grow();
 			}
 
+		}
+
+		void insert(std::initializer_list<std::pair<key_type, val_type> >& list) {
+			for (auto& elem : list) {
+				insert(elem);
+			}
 		}
 
 		size_t count(const key_type& key) {
@@ -540,7 +629,6 @@ template<typename key_type, typename val_type,
 				for (auto& bucket : map) {
 					for (auto& element : bucket) {
 
-						//long long int prehashKey = prehasher(element.first);
 						long long int key = hash(temp.size(), element.first);
 
 						update_start_and_end(key);
