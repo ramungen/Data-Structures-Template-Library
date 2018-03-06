@@ -12,7 +12,6 @@
 /*
 	THINGS TO DO:
 	1. remove dependancy from SList.h
-	2. change return value of iterator operator ->
 */
 template <typename val_type, 
 	typename prehash = std::hash<val_type> >
@@ -97,14 +96,14 @@ template <typename val_type,
 				}
 				if (ptr_it == ptr->end()) {
 					++pos;
-					if (pos >= parent->set.size()) {
+					if (pos > parent->end_pos) {
 						ptr = nullptr;
 						ptr_it = ptr->end();
 						return *this;
 					}
 					while (parent->set[pos].empty()) {
 						++pos;
-						if (pos >= parent->set.size()) {
+						if (pos > parent->end_pos) {
 							ptr = nullptr;
 							ptr_it = ptr->end();
 							return *this;
@@ -346,7 +345,7 @@ template <typename val_type,
 			if (n <= set.size()) {
 				return;
 			}
-			start_pos = 2147483647;
+			start_pos = INT_MAX;
 			end_pos = -1;
 			int possibility = (int)((float)set.size() * 1.15f);
 			if (possibility > n) {
@@ -439,7 +438,7 @@ template <typename val_type,
 		}
 
 		void shrink()  { 
-			if (set.size() > starting_size && set.size() >= elements * 4) {
+			if (set.size() > starting_size && (float)set.size() * load_factor >= elements * 4) {
 				start_pos = 2147483647;
 				end_pos = -1;
 				std::vector<SList<val_type>> temp(set.size() / 2);
