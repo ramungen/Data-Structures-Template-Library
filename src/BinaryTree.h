@@ -121,9 +121,10 @@ namespace DataStructures {
 					parent = current;
 					current = current->right;
 				}
+				// found the item to be deleted
 				else {
 					--size_;
-
+					// the item has no children
 					if (current->left == nullptr && current->right == nullptr) {
 						if (current == head) {
 							head = nullptr;
@@ -139,6 +140,7 @@ namespace DataStructures {
 						current = nullptr;
 						return;
 					}
+					// has no left children
 					else if (current->left == nullptr) {
 						if (current == head) {
 							head = current->right;
@@ -156,6 +158,7 @@ namespace DataStructures {
 						current = nullptr;
 						return;
 					}
+					// has no right children
 					else if (current->right == nullptr) {
 
 						if (current == head) {
@@ -175,9 +178,10 @@ namespace DataStructures {
 						current = nullptr;
 						return;
 					}
+					// has both children
 					else {
 						auto[minParent, min] = rightMin(current);
-						// change later to prevent copying
+						// TODO: change later to prevent copying
 						current->data = min->data;
 						eraseRightMinimum(&minParent, &min);
 						return;
@@ -188,7 +192,7 @@ namespace DataStructures {
 		}
 
 	private:
-
+		// erases the minimum of the right subrtee
 		void eraseRightMinimum(Node** parent, Node** current) {
 				if ((*parent)->left == (*current)) {
 					(*parent)->left = (*current)->left;
