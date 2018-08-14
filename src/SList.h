@@ -17,8 +17,13 @@ private:
 	struct Node;
 
 	template<typename T>
-	class forward_iterator :
-		public std::iterator<std::forward_iterator_tag, Node > {
+	class forward_iterator {
+
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = Node;
+		using difference_type = std::ptrdiff_t;
+		using pointer = Node*;
+		using reference = Node&;
 
 	public:
 

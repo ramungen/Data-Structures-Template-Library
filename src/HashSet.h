@@ -27,9 +27,12 @@ template <typename val_type,
 			Node* next;
 			val_type data;
 		};
-
 		class bucket_iterator :
 			public std::iterator<std::forward_iterator_tag, Node> {
+
+			using iterator_category = std::forward_iterator_tag;
+			using pointer = Node*;
+			using reference = Node&;
 
 		public:
 
@@ -222,8 +225,11 @@ template <typename val_type,
 	private:
 
 		template<typename val_type>
-		class forward_iterator :
-			public std::iterator<std::forward_iterator_tag, Bucket > {
+		class forward_iterator {
+
+			using iterator_category = std::forward_iterator_tag;
+			using pointer = Bucket*;
+			using reference = Bucket&;
 
 			friend class HashSet; // to access private constructors
 		public:
