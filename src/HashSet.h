@@ -27,8 +27,7 @@ template <typename val_type,
 			Node* next;
 			val_type data;
 		};
-		class bucket_iterator :
-			public std::iterator<std::forward_iterator_tag, Node> {
+		class bucket_iterator {
 
 			using iterator_category = std::forward_iterator_tag;
 			using pointer = Node*;

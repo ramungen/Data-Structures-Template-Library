@@ -270,6 +270,7 @@ template<typename key_type, typename val_type,
 			using iterator_category = std::forward_iterator_tag;
 			using pointer = Bucket*;
 			using reference = Bucket&;
+			using value = std::pair<const key_type, val_type>;
 
 			friend class HashMap; // to access private constructors
 		public:
@@ -360,14 +361,14 @@ template<typename key_type, typename val_type,
 			bool operator !=(const forward_iterator rhs) const {
 				return !(*this == rhs);
 			}
-			std::pair<const key_type, val_type>& operator*() const { // change
+			value& operator*() const { // change
 				if (ptr == nullptr || ptr_it == ptr->end()) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
 
 				return *ptr_it;
 			}
-			std::pair<const key_type, val_type>* operator->() const { // change
+			value* operator->() const { // change
 				if (ptr == nullptr || ptr_it == ptr->end()) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
