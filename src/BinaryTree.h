@@ -6,8 +6,7 @@ namespace DataStructures {
 
 	/*
 	TODO:
-	1. Make it an AVL Tree
-	2. Crete Map and Set that inherit from BinaryTre
+	1. Crete Map and Set that inherit from BinaryTre
 	*/
 
 	template <typename val_type>
@@ -283,16 +282,16 @@ namespace DataStructures {
 						if ((current)->left->load_factor < 0) {
 							++total_compensation;
 							
-							current->load_factor = 0; // += 2;
-							current->left->load_factor = 0; //++;
+							current->load_factor = 0;
+							current->left->load_factor = 0;
 
 							RightRotate(current, parent);
 						}
 						// left child is balanced
 						else if ((current)->left->load_factor == 0) {
 
-							current->load_factor++;
-							current->left->load_factor++;
+							current->load_factor = -1;
+							current->left->load_factor = 1;
 
 							RightRotate(current, parent);
 						}
@@ -301,8 +300,8 @@ namespace DataStructures {
 						else {
 							
 							++total_compensation;
-							current->load_factor = 0; //+= 2;
-							current->left->load_factor = 0; //--;
+							current->load_factor = 0;
+							current->left->load_factor = 0;
 
 							LeftRotate((current)->left, current);
 							RightRotate(current, parent);
@@ -315,15 +314,15 @@ namespace DataStructures {
 						if (current->right->load_factor > 0) {
 							++total_compensation;
 							
-							current->load_factor = 0; //-= 2;
-							current->right->load_factor = 0; //--;
+							current->load_factor = 0;
+							current->right->load_factor = 0;
 
 							LeftRotate(current, parent);
 						}
 						// right child is balanced
 						else if (current->right->load_factor == 0) {
-							current->load_factor--;
-							current->right->load_factor--;
+							current->load_factor = 1;
+							current->right->load_factor = -1;
 
 							LeftRotate(current, parent);
 
@@ -332,8 +331,8 @@ namespace DataStructures {
 						else {
 
 							++total_compensation;
-							current->load_factor = 0; //-= 2;
-							current->right->load_factor = 0; // ++;
+							current->load_factor = 0;
+							current->right->load_factor = 0;
 
 							RightRotate((current)->right, current);
 							LeftRotate(current, parent);
@@ -350,35 +349,48 @@ namespace DataStructures {
 							parent->load_factor -= total_compensation;
 						}
 					}
-					// experiment
-					if (total_compensation != 0) {
-						return;
-					}
 				}
 			}
 
 		public:
 
-		void erase(const val_type& value) {
+			void erase(const val_type& value) {
 
-			Node* parent = nullptr;
-			Node* current = head;
-			while (current != nullptr) {
+				// we use this to make it easier to track load factors
+				if (find(value) == end()) {
+					return;
+				}
 
-				if (value < current->data) {
-					parent = current;
-					current = current->left;
+				Node* parent = nullptr;
+				Node* current = head;
+				std::stack<Node*> parents;
+				while (current != nullptr) {
+
+					if (value < current->data) {
+
+						++current->load_factor;
+						parents.push(current);
+
+						parent = current;
+						current = current->left;
+					}
+					else if (value > current->data) {
+
+						--current->load_factor;
+						parents.push(current);
+
+						parent = current;
+						current = current->right;
+					}
+					// found the item to be deleted
+					else {
+						delete_found()
+					}
 				}
-				else if (value > current->data) {
-					parent = current;
-					current = current->right;
+				if (parent != nullptr) {
+					rebalance(parents);
 				}
-				// found the item to be deleted
-				else {
-					delete_found()
 			}
-		}
-
 	private:
 
 		void delete_found() {
@@ -451,7 +463,7 @@ namespace DataStructures {
 				return;
 			}
 		}
-		}
+		
 		Node* minimum(Node* current, std::stack<Node*>& stack) {
 			
 			while (current->left != nullptr) {
@@ -503,32 +515,13 @@ namespace DataStructures {
 			}
 		}
 
-		public:
-			// test functions
-			int max_height_test() {
-				return maxH(head);
-			}
-			void right_rotate_test() {
-				RightRotate(head->right, head);
-			}
-			void left_rotate_test() {
-				LeftRotate(head->right, head);
-			}
-			private:
-				int maxH(Node* current) {
-					if (current == nullptr) {
-						return -1;
-					}
-					return 1 + std::max(maxH(current->left), maxH(current->right));
-				}
-
-		// performs a left rotation (seems to work so far)
+		// performs a left rotation
 		void LeftRotate(Node* currNode, Node* parent) {
 
 			Node* temp = currNode->right;
 			currNode->right = temp->left;
 			temp->left = currNode;
-			
+
 			if (parent != nullptr) {
 				if (parent->left == currNode) {
 					parent->left = temp;
@@ -541,6 +534,21 @@ namespace DataStructures {
 				head = temp;
 			}
 		}
+
+		public:
+			// test functions
+			int max_height_test() {
+				return maxH(head);
+			}	
+			private:
+				int maxH(Node* current) {
+					if (current == nullptr) {
+						return -1;
+					}
+					return 1 + std::max(maxH(current->left), maxH(current->right));
+				}
+
+		
 
 	};
 }
