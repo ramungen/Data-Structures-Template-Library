@@ -2,33 +2,33 @@
 #include <string>
 #include <utility>
 #include <algorithm>
-namespace DataStructures {
+namespace data_structures {
 
 	/*
 	TODO:
 	1. Crete Map and Set that inherit from BinaryTre
 	*/
 
-	template <typename val_type>
-	class BinaryTree {
+	template <typename key_type, class compare = std::less<key_type> >
+	class AVL_tree {
 	
 
 	private:
 
 		struct Node {
 
-			val_type data;
+			key_type data;
 			Node* left;
 			Node* right;
 			// - is left heavy, + is right heavy, 0 is neutral
 			short load_factor;
 
-			Node(const val_type& value) :
+			Node(const key_type& value) :
 				data(value),
 				right(nullptr),
 				left(nullptr),
 			    load_factor(0) {}
-			Node(val_type&& value) :
+			Node(key_type&& value) :
 				data(std::move(value)),
 				right(nullptr),
 				left(nullptr),
@@ -37,15 +37,15 @@ namespace DataStructures {
 
 	private:
 
-		template<typename val_type>
+		template<typename key_type>
 		class forward_iterator {
 			// to access private constructors
-			friend BinaryTree;
+			friend AVL_tree;
 
 			using iterator_category = std::forward_iterator_tag;
 			using pointer = Node*;
 			using reference = Node & ;
-			using value = val_type;
+			using value = key_type;
 			// constructors
 		public:
 
@@ -100,13 +100,13 @@ namespace DataStructures {
 			bool operator !=(const forward_iterator& rhs) const {
 				return current != rhs.current;
 			}
-			val_type& operator*() const {
+			key_type& operator*() const {
 				if (current == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
 				return current->data;
 			}
-			val_type* operator->() const {
+			key_type* operator->() const {
 				if (current == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
@@ -119,16 +119,26 @@ namespace DataStructures {
 		};
 
 	public:
-		using iterator = forward_iterator<val_type>;
+		using tree_iterator = forward_iterator<key_type>;
 
-		size_t size_;
 	private:
+		compare comp;
+		size_t size_;
 		Node * head;
-	public:
-		BinaryTree() : head(nullptr), size_(0) {
-		}
 
-		~BinaryTree() {
+	public:
+		AVL_tree() : head(nullptr), size_(0) {}
+		AVL_tree(const std::initializer_list<key_type>& list) {
+			for (auto elem : list) {
+				insert(elem);
+			}
+		}
+		AVL_tree(std::initializer_list<key_type>&& list) {
+			for (auto elem : list) {
+				insert(elem);
+			}
+		}
+		~AVL_tree() {
 			this->clear();
 		}
 
@@ -139,20 +149,20 @@ namespace DataStructures {
 			return size_;
 		}
 
-		iterator begin() {
+		tree_iterator begin() {
 			if (head == nullptr) {
 				return end();
 			}
 			std::stack<Node*> s;
 			Node* min = minimum(head, s);
 			
-			return iterator(min, std::move(s));
+			return tree_iterator(min, std::move(s));
 		}
-		iterator end() {
-			return iterator();
+		tree_iterator end() {
+			return tree_iterator();
 		}
 
-		iterator find(const val_type& value) {
+		tree_iterator find(const key_type& value) {
 			Node* current = head;
 			std::stack<Node*> parents;
 			while (current != nullptr) {
@@ -166,7 +176,7 @@ namespace DataStructures {
 					current = current->right;
 				}
 				else {
-					return iterator(current, parents);
+					return tree_iterator(current, parents);
 				}
 			}
 			return end();
@@ -199,7 +209,7 @@ namespace DataStructures {
 			size_ = 0;
 		}
 
-		void insert(const val_type& value) {
+		void insert(const key_type& value) {
 
 			if (find(value) != end()) {
 				return;
@@ -256,7 +266,7 @@ namespace DataStructures {
 				
 			}
 			if (need_rebalancing && !parents.empty()) {
-				rebalance(parents);
+				//rebalance(parents);
 			}
 		}
 		private:
@@ -354,7 +364,7 @@ namespace DataStructures {
 
 		public:
 
-			void erase(const val_type& value) {
+			void erase(const key_type& value) {
 
 				// we use this to make it easier to track load factors
 				if (find(value) == end()) {
@@ -364,6 +374,8 @@ namespace DataStructures {
 				Node* parent = nullptr;
 				Node* current = head;
 				std::stack<Node*> parents;
+				bool need_rebalancing = false;
+
 				while (current != nullptr) {
 
 					if (value < current->data) {
@@ -384,94 +396,170 @@ namespace DataStructures {
 					}
 					// found the item to be deleted
 					else {
-						delete_found()
+						//delete_found(&current, &parent, parents);
+						//current = nullptr;
+						--size_;
+						// no children
+						if (current->left == nullptr && current->right == nullptr) {
+							// means current is head
+							if (parent == nullptr) {
+								delete current;
+								head = nullptr;
+								current = nullptr;
+							}
+							else {
+								if (parent->left == current) {
+									parent->left = nullptr;
+								}
+								else {
+									parent->right = nullptr;
+								}
+
+								delete current;
+								current = nullptr;
+							}
+						}
+						// has no left children
+						else if (current->left == nullptr) {
+							if (current == head) {
+								head = current->right;
+
+							}
+							else {
+								if (parent->left == current) {
+									parent->left = current->right;
+								}
+								else {
+									parent->right = current->right;
+								}
+							}
+							delete current;
+							current = nullptr;
+						}
+						// has no right children
+						else if (current->right == nullptr) {
+
+							if (current == head) {
+								head = current->left;
+
+							}
+							else {
+								if (parent->left == current) {
+									parent->left = current->left;
+								}
+								else {
+									parent->right = current->left;
+								}
+							}
+
+							delete current;
+							current = nullptr;
+						}
+						// has both children
+						else {
+							auto[minParent, min] = rightMin(current, parents);
+							// TODO: change later to prevent copying
+							current->data = min->data;
+							eraseRightMinimum(&minParent, &min);
+						}
+
 					}
+
+
+					if (parent != nullptr) {
+						//need_rebalancing |= parent->load_factor > 1;
+						//need_rebalancing |= parent->load_factor < -1;
+						if (parent->load_factor > 1 || parent->load_factor < -1) {
+							need_rebalancing = true;
+						}
+
+					}
+
 				}
-				if (parent != nullptr) {
+
+				if (!parents.empty() && need_rebalancing) {
 					rebalance(parents);
 				}
 			}
 	private:
 
-		void delete_found() {
-			--size_;
-			// no children
-			if (current->left == nullptr && current->right == nullptr) {
-				// means current is head
-				if (parent == nullptr) {
-					delete current;
-					head = nullptr;
-				}
-				else {
-					if (parent->left == current) {
-						parent->left = nullptr;
-					}
-					else {
-						parent->right = nullptr;
-					}
+		//void delete_found(Node** crnt, Node** prnt, std::stack<Node*>& parents) {
 
-					delete current;
-					current = nullptr;
-				}
+		//	// to prevent dereferencing crnt each time
+		//	Node* current = *crnt;
+		//	Node* parent = *prnt;
+		//	--size_;
+		//	// no children
+		//	if (current->left == nullptr && current->right == nullptr) {
+		//		// means current is head
+		//		if (parent == nullptr) {
+		//			delete current;
+		//			head = nullptr;
+		//		}
+		//		else {
+		//			if (parent->left == current) {
+		//				parent->left = nullptr;
+		//			}
+		//			else {
+		//				parent->right = nullptr;
+		//			}
 
-				return;
-			}
-			// has no left children
-			else if (current->left == nullptr) {
-				if (current == head) {
-					head = current->right;
+		//			delete current;
+		//			current = nullptr;
+		//		}
 
-				}
-				else {
-					if (parent->left == current) {
-						parent->left = current->right;
-					}
-					else {
-						parent->right = current->right;
-					}
-				}
-				delete current;
-				current = nullptr;
-				return;
-			}
-			// has no right children
-			else if (current->right == nullptr) {
+		//		return;
+		//	}
+		//	// has no left children
+		//	else if (current->left == nullptr) {
+		//		if (current == head) {
+		//			head = current->right;
 
-				if (current == head) {
-					head = current->left;
+		//		}
+		//		else {
+		//			if (parent->left == current) {
+		//				parent->left = current->right;
+		//			}
+		//			else {
+		//				parent->right = current->right;
+		//			}
+		//		}
+		//		delete current;
+		//		current = nullptr;
+		//		*crnt = nullptr;
+		//		return;
+		//	}
+		//	// has no right children
+		//	else if (current->right == nullptr) {
 
-				}
-				else {
-					if (parent->left == current) {
-						parent->left = current->left;
-					}
-					else {
-						parent->right = current->left;
-					}
-				}
+		//		if (current == head) {
+		//			head = current->left;
 
-				delete current;
-				current = nullptr;
-				return;
-			}
-			// has both children
-			else {
-				auto[minParent, min] = rightMin(current);
-				// TODO: change later to prevent copying
-				current->data = min->data;
-				eraseRightMinimum(&minParent, &min);
-				return;
-			}
-		}
+		//		}
+		//		else {
+		//			if (parent->left == current) {
+		//				parent->left = current->left;
+		//			}
+		//			else {
+		//				parent->right = current->left;
+		//			}
+		//		}
+
+		//		delete current;
+		//		current = nullptr;
+		//		return;
+		//	}
+		//	// has both children
+		//	else {
+		//		auto[minParent, min] = rightMin(current);
+		//		// TODO: change later to prevent copying
+		//		current->data = min->data;
+		//		eraseRightMinimum(&minParent, &min);
+		//		return;
+		//	}
+		//}
 		
-		Node* minimum(Node* current, std::stack<Node*>& stack) {
-			
-			while (current->left != nullptr) {
-				stack.push(current);
-				current = current->left;
-			}
-			return current;
-		}
+		
 
 		// erases the minimum of the right subrtee
 		void eraseRightMinimum(Node** parent, Node** current) {
@@ -486,16 +574,33 @@ namespace DataStructures {
 		}
 
 		// finds the minimum of a right subtree and it's parent
-		std::pair<Node*, Node*> rightMin(Node* node) {
+		std::pair<Node*, Node*> rightMin(Node* node, std::stack<Node*>& parents) {
+
 			Node* current = node->right;
 			Node* parent = node;
+
+			parent->load_factor--;
+			parents.push(parent);
+
 			while (current->left != nullptr) {
+
 				parent = current;
+				parent->load_factor++;
+
+				parents.push(parent);
 				current = current->left;
 			}
 			return std::make_pair(parent, current);
 		}
 
+		Node* minimum(Node* current, std::stack<Node*>& stack) {
+
+			while (current->left != nullptr) {
+				stack.push(current);
+				current = current->left;
+			}
+			return current;
+		}
 		void RightRotate(Node* currNode, Node* parent) {
 
 			Node* temp = currNode->left;

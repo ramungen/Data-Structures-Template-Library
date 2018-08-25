@@ -119,7 +119,7 @@ template<typename key_type, typename val_type,
 			}
 
 
-			bucket_iterator find(const val_type& value) {
+			bucket_iterator find(const key_type& value) {
 
 				Node* iter = head;
 				while (iter) {
@@ -151,7 +151,7 @@ template<typename key_type, typename val_type,
 			val_type& create_if_not_found(const key_type& key) {
 				if (head == nullptr) {
 					val_type new_value;
-					if (std::is_arithmetic<val_type>::value == true) { // custom constructs only arithmetic types
+					if (std::is_arithmetic<val_type>::value) { // custom constructs only arithmetic types
 						new_value = 0;
 					}
 					Node* new_node = new Node(key, new_value);
@@ -167,7 +167,7 @@ template<typename key_type, typename val_type,
 					}
 				}
 				val_type new_value;
-				if (std::is_arithmetic<val_type>::value == true) { // custom constructs only arithmetic types
+				if (std::is_arithmetic<val_type>::value) { // custom constructs only arithmetic types
 					new_value = 0;
 				}
 
@@ -187,7 +187,7 @@ template<typename key_type, typename val_type,
 				++list_length;
 			}
 
-			bool erase(const val_type& value) {
+			bool erase(const key_type& value) {
 
 				if (head == nullptr) {
 					return false;
@@ -505,7 +505,7 @@ template<typename key_type, typename val_type,
 
 
 
-		iterator find(const val_type& key) {
+		iterator find(const key_type& key) {
 			
 			long long int hash_key = hash(map.size(), key);
 
@@ -555,7 +555,7 @@ template<typename key_type, typename val_type,
 
 		}
 
-		void insert(std::initializer_list<std::pair<key_type, val_type> >& list) {
+		void insert(std::initializer_list<pair>& list) {
 			for (auto& elem : list) {
 				insert(elem);
 			}

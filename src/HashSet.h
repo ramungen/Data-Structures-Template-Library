@@ -15,8 +15,8 @@
 	1. remove code similarities with HashMap via inheritance/composition
 	2. implement const_iterator
 */
-template <typename val_type, 
-	typename prehash = std::hash<val_type> >
+template <typename key_type, 
+	typename prehash = std::hash<key_type> >
 
 	class HashSet {
 	
@@ -25,7 +25,7 @@ template <typename val_type,
 		struct Node {
 
 			Node* next;
-			val_type data;
+			key_type data;
 		};
 		class bucket_iterator {
 
@@ -65,13 +65,13 @@ template <typename val_type,
 			bool operator !=(const bucket_iterator& rhs) const {
 				return ptr != rhs.ptr;
 			}
-			val_type& operator*() const {
+			key_type& operator*() const {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
 				return ptr->data;
 			}
-			val_type* operator->() const {
+			key_type* operator->() const {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
@@ -98,7 +98,7 @@ template <typename val_type,
 			bool empty() {
 				return list_length == 0;
 			}
-			bucket_iterator find(const val_type& value) {
+			bucket_iterator find(const key_type& value) {
 
 				Node* iter = head;
 				while (iter) {
@@ -115,7 +115,7 @@ template <typename val_type,
 				list_length(0), head(nullptr)
 			{}
 
-			void push_front(val_type&& value) {
+			void push_front(key_type&& value) {
 				Node* temp = new Node;
 				temp->data = value;
 				temp->next = nullptr;
@@ -125,7 +125,7 @@ template <typename val_type,
 			}
 
 
-			void push_front(const val_type& value) {
+			void push_front(const key_type& value) {
 
 				Node* temp = new Node;
 				temp->data = value;
@@ -136,7 +136,7 @@ template <typename val_type,
 			}
 
 		
-			bool erase(const val_type& value) {
+			bool erase(const key_type& value) {
 				if (head == nullptr) {
 					return false;
 				}
@@ -223,7 +223,7 @@ template <typename val_type,
 
 	private:
 
-		template<typename val_type>
+		template<typename key_type>
 		class forward_iterator {
 
 			using iterator_category = std::forward_iterator_tag;
@@ -319,13 +319,13 @@ template <typename val_type,
 			bool operator !=(const forward_iterator rhs) const {
 				return !(*this == rhs);
 			}
-			const val_type& operator*() const {
+			const key_type& operator*() const {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
 				return *ptr_it;
 			}
-			const val_type& operator->() const {
+			const key_type& operator->() const {
 				if (ptr == nullptr) {
 					throw std::exception("error dereferencing an invalid iterator");
 				}
@@ -342,8 +342,8 @@ template <typename val_type,
 
 	public:
 
-		typedef forward_iterator<val_type> iterator;
-		typedef forward_iterator<const val_type> const_iterator;
+		typedef forward_iterator<key_type> iterator;
+		typedef forward_iterator<const key_type> const_iterator;
 
 		HashSet(float factor = 0.75f) :
 			load_factor(factor),
@@ -363,7 +363,7 @@ template <typename val_type,
 			rand2 = U(generator);
 		}
 
-		HashSet(const std::initializer_list<val_type>& list)
+		HashSet(const std::initializer_list<key_type>& list)
 			: HashSet()
 
 		{
@@ -442,7 +442,7 @@ template <typename val_type,
 			return *this;
 		}
 
-		iterator find(const val_type& value) { 
+		iterator find(const key_type& value) { 
 			long long int prehash_key = prehasher(value);
 			long long int hash_key = hash(prehash_key, set.size());
 
@@ -469,7 +469,7 @@ template <typename val_type,
 			return iterator();
 		}
 
-		void insert(const val_type& value) { 
+		void insert(const key_type& value) { 
 			long long int prehash_key = prehasher(value);
 			long long int hash_key = hash(prehash_key, set.size());
 
@@ -482,7 +482,7 @@ template <typename val_type,
 				grow();
 			}
 		}
-		void insert(const val_type&& value) { 
+		void insert(const key_type&& value) { 
 			long long int prehash_key = prehasher(value);
 			long long int hash_key = hash(prehash_key, set.size());
 
@@ -494,19 +494,19 @@ template <typename val_type,
 				grow();
 			}
 		}
-		void insert(const std::initializer_list<val_type>& list) {
+		void insert(const std::initializer_list<key_type>& list) {
 			for (const auto& element : list) {
 				insert(element);
 			}
 		}
-		void insert(const std::initializer_list<val_type>&& list) {
+		void insert(const std::initializer_list<key_type>&& list) {
 			for (const auto& element : list) {
 				insert(std::move(element));
 			}
 		}
 		
 
-		void erase(const val_type& value) { 
+		void erase(const key_type& value) { 
 			if (empty()) {
 				return;
 			}
@@ -685,7 +685,7 @@ template <typename val_type,
 		}
 };
 
-template<typename val_type, typename prehash = PreHash<val_type> >
-const unsigned int HashSet<val_type, prehash>::starting_size = 20;
+template<typename key_type, typename prehash = PreHash<key_type> >
+const unsigned int HashSet<key_type, prehash>::starting_size = 20;
 
 #endif
