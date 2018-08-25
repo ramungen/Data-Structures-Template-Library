@@ -396,182 +396,122 @@ namespace data_structures {
 					}
 					// found the item to be deleted
 					else {
-						//delete_found(&current, &parent, parents);
-						//current = nullptr;
-						--size_;
-						// no children
-						if (current->left == nullptr && current->right == nullptr) {
-							// means current is head
-							if (parent == nullptr) {
-								delete current;
-								head = nullptr;
-								current = nullptr;
-							}
-							else {
-								if (parent->left == current) {
-									parent->left = nullptr;
-								}
-								else {
-									parent->right = nullptr;
-								}
-
-								delete current;
-								current = nullptr;
-							}
-						}
-						// has no left children
-						else if (current->left == nullptr) {
-							if (current == head) {
-								head = current->right;
-
-							}
-							else {
-								if (parent->left == current) {
-									parent->left = current->right;
-								}
-								else {
-									parent->right = current->right;
-								}
-							}
-							delete current;
-							current = nullptr;
-						}
-						// has no right children
-						else if (current->right == nullptr) {
-
-							if (current == head) {
-								head = current->left;
-
-							}
-							else {
-								if (parent->left == current) {
-									parent->left = current->left;
-								}
-								else {
-									parent->right = current->left;
-								}
-							}
-
-							delete current;
-							current = nullptr;
-						}
-						// has both children
-						else {
-							auto[minParent, min] = rightMin(current, parents);
-							// TODO: change later to prevent copying
-							current->data = min->data;
-							eraseRightMinimum(&minParent, &min);
-						}
-
+						delete_found(current, parent, parents);
 					}
 
-
 					if (parent != nullptr) {
-						//need_rebalancing |= parent->load_factor > 1;
-						//need_rebalancing |= parent->load_factor < -1;
-						if (parent->load_factor > 1 || parent->load_factor < -1) {
+						if (std::abs(parent->load_factor) > 1) {
 							need_rebalancing = true;
 						}
 
-					}
 
+						if (std::abs(parent->load_factor) > 2) {
+							throw std::exception("rebalancing in delete error; load factors not working			properly");
+						}
+					}
 				}
 
 				if (!parents.empty() && need_rebalancing) {
-					rebalance(parents);
+					//rebalance(parents);
 				}
 			}
 	private:
 
-		//void delete_found(Node** crnt, Node** prnt, std::stack<Node*>& parents) {
+		void delete_found(Node*& current, Node*& parent, std::stack<Node*>& parents) {
 
-		//	// to prevent dereferencing crnt each time
-		//	Node* current = *crnt;
-		//	Node* parent = *prnt;
-		//	--size_;
-		//	// no children
-		//	if (current->left == nullptr && current->right == nullptr) {
-		//		// means current is head
-		//		if (parent == nullptr) {
-		//			delete current;
-		//			head = nullptr;
-		//		}
-		//		else {
-		//			if (parent->left == current) {
-		//				parent->left = nullptr;
-		//			}
-		//			else {
-		//				parent->right = nullptr;
-		//			}
-
-		//			delete current;
-		//			current = nullptr;
-		//		}
-
-		//		return;
-		//	}
-		//	// has no left children
-		//	else if (current->left == nullptr) {
-		//		if (current == head) {
-		//			head = current->right;
-
-		//		}
-		//		else {
-		//			if (parent->left == current) {
-		//				parent->left = current->right;
-		//			}
-		//			else {
-		//				parent->right = current->right;
-		//			}
-		//		}
-		//		delete current;
-		//		current = nullptr;
-		//		*crnt = nullptr;
-		//		return;
-		//	}
-		//	// has no right children
-		//	else if (current->right == nullptr) {
-
-		//		if (current == head) {
-		//			head = current->left;
-
-		//		}
-		//		else {
-		//			if (parent->left == current) {
-		//				parent->left = current->left;
-		//			}
-		//			else {
-		//				parent->right = current->left;
-		//			}
-		//		}
-
-		//		delete current;
-		//		current = nullptr;
-		//		return;
-		//	}
-		//	// has both children
-		//	else {
-		//		auto[minParent, min] = rightMin(current);
-		//		// TODO: change later to prevent copying
-		//		current->data = min->data;
-		//		eraseRightMinimum(&minParent, &min);
-		//		return;
-		//	}
-		//}
-		
-		
-
-		// erases the minimum of the right subrtee
-		void eraseRightMinimum(Node** parent, Node** current) {
-				if ((*parent)->left == (*current)) {
-					(*parent)->left = (*current)->left;
+			--size_;
+			// no children
+			if (current->left == nullptr && current->right == nullptr) {
+				// means current is head
+				if (parent == nullptr) {
+					delete current;
+					head = nullptr;
+					current = nullptr;
 				}
 				else {
-					(*parent)->right = (*current)->left;
+					if (parent->left == current) {
+						parent->left = nullptr;
+					}
+					else {
+						parent->right = nullptr;
+					}
+
+					delete current;
+					current = nullptr;
 				}
-				delete *current;
-				*current = nullptr;
+
+				return;
+			}
+			// has no left children
+			else if (current->left == nullptr) {
+				if (current == head) {
+					head = current->right;
+
+				}
+				else {
+					if (parent->left == current) {
+						parent->left = current->right;
+					}
+					else {
+						parent->right = current->right;
+					}
+				}
+				delete current;
+				current = nullptr;
+				return;
+			}
+			// has no right children
+			else if (current->right == nullptr) {
+
+				if (current == head) {
+					head = current->left;
+
+				}
+				else {
+					if (parent->left == current) {
+						parent->left = current->left;
+					}
+					else {
+						parent->right = current->left;
+					}
+				}
+
+				delete current;
+				current = nullptr;
+				return;
+			}
+			// has both children
+			else {
+				auto[minParent, min] = rightMin(current, parents);
+				// TODO: change later to prevent copying
+				current->data = min->data;
+				eraseRightMinimum(minParent, min);
+				return;
+			}
 		}
+		
+		void eraseRightMinimum(Node*& parent, Node*& current) {
+			if (parent->left == current) {
+				parent->left = current->left;
+			}
+			else {
+				parent->right = current->left;
+			}
+			delete current;
+			current = nullptr;
+		}
+
+		//// erases the minimum of the right subrtee
+		//void eraseRightMinimum(Node** parent, Node** current) {
+		//		if ((*parent)->left == (*current)) {
+		//			(*parent)->left = (*current)->left;
+		//		}
+		//		else {
+		//			(*parent)->right = (*current)->left;
+		//		}
+		//		delete *current;
+		//		*current = nullptr;
+		//}
 
 		// finds the minimum of a right subtree and it's parent
 		std::pair<Node*, Node*> rightMin(Node* node, std::stack<Node*>& parents) {
@@ -586,8 +526,8 @@ namespace data_structures {
 
 				parent = current;
 				parent->load_factor++;
-
 				parents.push(parent);
+
 				current = current->left;
 			}
 			return std::make_pair(parent, current);
