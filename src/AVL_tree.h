@@ -1,17 +1,12 @@
 #pragma once
 #include <string>
 #include <utility>
-#include <algorithm>
-namespace data_structures {
 
-	/*
-	TODO:
-	1. Crete Map and Set that inherit from BinaryTre
-	*/
+namespace data_structures {
 
 	template <typename key_type, class compare = std::less<key_type> >
 	class AVL_tree {
-	
+
 
 	private:
 
@@ -20,20 +15,25 @@ namespace data_structures {
 			key_type data;
 			Node* left;
 			Node* right;
-			// - is left heavy, + is right heavy, 0 is neutral
+			// - is left heavy, + is right heavy, 0 is balanced
 			short load_factor;
 
 			Node(const key_type& value) :
 				data(value),
 				right(nullptr),
 				left(nullptr),
-			    load_factor(0) {}
+				load_factor(0) {}
 			Node(key_type&& value) :
 				data(std::move(value)),
 				right(nullptr),
 				left(nullptr),
 				load_factor(0) {}
 		};
+
+	private:
+		const compare comp;
+		size_t size_;
+		Node* head;
 
 	private:
 
@@ -43,7 +43,7 @@ namespace data_structures {
 			friend AVL_tree;
 
 			using iterator_category = std::forward_iterator_tag;
-			using pointer = Node*;
+			using pointer = Node * ;
 			using reference = Node & ;
 			using value = key_type;
 			// constructors
@@ -51,13 +51,13 @@ namespace data_structures {
 
 			forward_iterator() : current(nullptr) {}
 
-			forward_iterator(const forward_iterator& source) : 
-				current(source.current), 
+			forward_iterator(const forward_iterator& source) :
+				current(source.current),
 				parents(source.parents) {}
 
 			forward_iterator& operator=(const forward_iterator& rhs) {
 				current = rhs.current;
-				parents= rhs.parents;
+				parents = rhs.parents;
 				return *this;
 			}
 
@@ -65,7 +65,7 @@ namespace data_structures {
 			forward_iterator(pointer c, std::stack<pointer> p) : current(c), parents(p) {}
 		public:
 
-			forward_iterator& operator++() {
+			forward_iterator & operator++() {
 				if (current == nullptr) {
 					throw std::exception("error advancing end iterator");
 				}
@@ -102,13 +102,13 @@ namespace data_structures {
 			}
 			key_type& operator*() const {
 				if (current == nullptr) {
-					throw std::exception("error dereferencing an invalid iterator");
+					throw std::out_of_range("error dereferencing an invalid iterator");
 				}
 				return current->data;
 			}
 			key_type* operator->() const {
 				if (current == nullptr) {
-					throw std::exception("error dereferencing an invalid iterator");
+					throw std::out_of_range("error dereferencing an invalid iterator");
 				}
 				return &current->data;
 			}
@@ -121,13 +121,22 @@ namespace data_structures {
 	public:
 		using tree_iterator = forward_iterator<key_type>;
 
-	private:
-		compare comp;
-		size_t size_;
-		Node * head;
+
 
 	public:
 		AVL_tree() : head(nullptr), size_(0) {}
+
+		AVL_tree(AVL_tree&& oth) : head(nullptr), size_(0) {
+			std::swap(this->head, oth.head);
+			std::swap(this->size_, oth.size_);
+		}
+
+		AVL_tree& operator=(AVL_tree&& oth) {
+			clear();
+			std::swap(this->head, oth.head);
+			std::swap(this->size_, oth.size_);
+		}
+
 		AVL_tree(const std::initializer_list<key_type>& list) {
 			for (auto elem : list) {
 				insert(elem);
@@ -135,7 +144,7 @@ namespace data_structures {
 		}
 		AVL_tree(std::initializer_list<key_type>&& list) {
 			for (auto elem : list) {
-				insert(elem);
+				insert(std::move(elem));
 			}
 		}
 		~AVL_tree() {
@@ -149,30 +158,30 @@ namespace data_structures {
 			return size_;
 		}
 
-		tree_iterator begin() {
+		tree_iterator begin() const {
 			if (head == nullptr) {
 				return end();
 			}
 			std::stack<Node*> s;
 			Node* min = minimum(head, s);
-			
+
 			return tree_iterator(min, std::move(s));
 		}
-		tree_iterator end() {
+		tree_iterator end() const {
 			return tree_iterator();
 		}
 
-		tree_iterator find(const key_type& value) {
+		tree_iterator find(const key_type& value) const {
 			Node* current = head;
 			std::stack<Node*> parents;
 			while (current != nullptr) {
 				//parents.push(current);
-				if (value < current->data){
+				if (comp(value, current->data)) {
 					// we only keep track of items bigger than our data
 					parents.push(current);
 					current = current->left;
 				}
-				else if (value > current->data) {
+				else if (comp(current->data, value)) {
 					current = current->right;
 				}
 				else {
@@ -227,7 +236,7 @@ namespace data_structures {
 			bool quit = false;
 
 			while (!quit) {
-				if (value < current->data) {
+				if (comp(value, current->data)) {
 
 					parents.push(current);
 					--current->load_factor;
@@ -241,7 +250,7 @@ namespace data_structures {
 					}
 
 				}
-				else if (value > current->data) {
+				else if (comp(current->data, value)) {
 
 					parents.push(current);
 					++current->load_factor;
@@ -258,12 +267,12 @@ namespace data_structures {
 				}
 				if (parent != nullptr) {
 
-					if (parent->load_factor > 1 || parent->load_factor < -1) {
+					if (std::abs(parent->load_factor) > 1) {
 						need_rebalancing = true;
 					}
 
 				}
-				
+
 			}
 			if (need_rebalancing && !parents.empty()) {
 				//rebalance(parents);
@@ -295,7 +304,7 @@ namespace data_structures {
 							current->load_factor = 0;
 							current->left->load_factor = 0;
 
-							RightRotate(current, parent);
+							right_rotate(current, parent);
 						}
 						// left child is balanced
 						else if ((current)->left->load_factor == 0) {
@@ -303,7 +312,7 @@ namespace data_structures {
 							current->load_factor = -1;
 							current->left->load_factor = 1;
 
-							RightRotate(current, parent);
+							right_rotate(current, parent);
 						}
 
 						// left child is right heavy
@@ -313,8 +322,8 @@ namespace data_structures {
 							current->load_factor = 0;
 							current->left->load_factor = 0;
 
-							LeftRotate((current)->left, current);
-							RightRotate(current, parent);
+							left_rotate((current)->left, current);
+							right_rotate(current, parent);
 						}
 					}
 					// node is doubly right heavy
@@ -327,14 +336,14 @@ namespace data_structures {
 							current->load_factor = 0;
 							current->right->load_factor = 0;
 
-							LeftRotate(current, parent);
+							left_rotate(current, parent);
 						}
 						// right child is balanced
 						else if (current->right->load_factor == 0) {
 							current->load_factor = 1;
 							current->right->load_factor = -1;
 
-							LeftRotate(current, parent);
+							left_rotate(current, parent);
 
 						}
 						// right child is left heavy
@@ -344,8 +353,8 @@ namespace data_structures {
 							current->load_factor = 0;
 							current->right->load_factor = 0;
 
-							RightRotate((current)->right, current);
-							LeftRotate(current, parent);
+							right_rotate((current)->right, current);
+							left_rotate(current, parent);
 						}
 					}
 
@@ -378,7 +387,7 @@ namespace data_structures {
 
 				while (current != nullptr) {
 
-					if (value < current->data) {
+					if (comp(value, current->data)) {
 
 						++current->load_factor;
 						parents.push(current);
@@ -386,7 +395,7 @@ namespace data_structures {
 						parent = current;
 						current = current->left;
 					}
-					else if (value > current->data) {
+					else if (comp(current->data, value)) {
 
 						--current->load_factor;
 						parents.push(current);
@@ -482,15 +491,15 @@ namespace data_structures {
 			}
 			// has both children
 			else {
-				auto[minParent, min] = rightMin(current, parents);
+				auto[minParent, min] = right_min(current, parents);
 				// TODO: change later to prevent copying
 				current->data = min->data;
-				eraseRightMinimum(minParent, min);
+				erase_right_min(minParent, min);
 				return;
 			}
 		}
 		
-		void eraseRightMinimum(Node*& parent, Node*& current) {
+		void erase_right_min(Node*& parent, Node*& current) {
 			if (parent->left == current) {
 				parent->left = current->left;
 			}
@@ -501,20 +510,8 @@ namespace data_structures {
 			current = nullptr;
 		}
 
-		//// erases the minimum of the right subrtee
-		//void eraseRightMinimum(Node** parent, Node** current) {
-		//		if ((*parent)->left == (*current)) {
-		//			(*parent)->left = (*current)->left;
-		//		}
-		//		else {
-		//			(*parent)->right = (*current)->left;
-		//		}
-		//		delete *current;
-		//		*current = nullptr;
-		//}
-
-		// finds the minimum of a right subtree and it's parent
-		std::pair<Node*, Node*> rightMin(Node* node, std::stack<Node*>& parents) {
+		// finds the minimum of a right subtree and its parent
+		std::pair<Node*, Node*> right_min(Node* node, std::stack<Node*>& parents) {
 
 			Node* current = node->right;
 			Node* parent = node;
@@ -533,7 +530,7 @@ namespace data_structures {
 			return std::make_pair(parent, current);
 		}
 
-		Node* minimum(Node* current, std::stack<Node*>& stack) {
+		Node* minimum(Node* current, std::stack<Node*>& stack) const {
 
 			while (current->left != nullptr) {
 				stack.push(current);
@@ -541,7 +538,7 @@ namespace data_structures {
 			}
 			return current;
 		}
-		void RightRotate(Node* currNode, Node* parent) {
+		void right_rotate(Node* currNode, Node* parent) {
 
 			Node* temp = currNode->left;
 			currNode->left = temp->right;
@@ -561,7 +558,7 @@ namespace data_structures {
 		}
 
 		// performs a left rotation
-		void LeftRotate(Node* currNode, Node* parent) {
+		void left_rotate(Node* currNode, Node* parent) {
 
 			Node* temp = currNode->right;
 			currNode->right = temp->left;
@@ -579,21 +576,6 @@ namespace data_structures {
 				head = temp;
 			}
 		}
-
-		public:
-			// test functions
-			int max_height_test() {
-				return maxH(head);
-			}	
-			private:
-				int maxH(Node* current) {
-					if (current == nullptr) {
-						return -1;
-					}
-					return 1 + std::max(maxH(current->left), maxH(current->right));
-				}
-
-		
 
 	};
 }
