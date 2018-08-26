@@ -7,14 +7,8 @@
 #include <initializer_list>
 
 
+namespace implementation {
 
-
-/*
-TODO:
-1. remove code similarities with HashMap via inheritance/composition
-2. implement const_iterator
-*/
-namespace data_structures {
 	template <typename key_type,
 		typename prehash = std::hash<key_type> , class Compare = std::less<key_type> >
 
