@@ -4,16 +4,16 @@
 
 #include <utility>
 
-    // doubly linked list
+namespace data_structures {
+	// doubly linked list
 	template<class val_type>
 	class dlinked_list {
 	public:
-		
+
 		dlinked_list() :
 			head(nullptr),
 			tail(nullptr),
-			list_length(0)
-		{}
+			list_length(0) {}
 
 		dlinked_list(const dlinked_list<val_type>& rhs) {
 			Node* iter = rhs.head;
@@ -39,7 +39,7 @@
 
 		~dlinked_list() {
 			clear();
-			
+
 		}
 		void clear() {
 			Node* iter = head;
@@ -53,7 +53,7 @@
 			tail = nullptr;
 			list_length = 0;
 		}
-		
+
 		dlinked_list<val_type>& operator=(dlinked_list<val_type>&& rhs) {
 			clear();
 			std::swap(head, rhs.head);
@@ -62,7 +62,7 @@
 			return *this;
 		}
 
-		
+
 		dlinked_list<val_type>& operator=(const dlinked_list<val_type>& rhs) {
 			Node* iter = rhs.head;
 			while (iter) {
@@ -73,7 +73,7 @@
 			return *this;
 		}
 
-		
+
 		void append(dlinked_list<val_type>&& other) {
 			this->tail->next = other.head;
 			if (other.head) {
@@ -82,7 +82,7 @@
 			this->ListLength += other.length();
 		}
 
-		
+
 		void push_front(val_type const& value) {
 			Node* newNode = new Node(value);
 			if (head == nullptr) {
@@ -104,7 +104,7 @@
 			++list_length;
 
 		}
-		
+
 		void push_back(val_type const& value) {
 			if (head == nullptr) {
 				push_front(value);
@@ -119,7 +119,7 @@
 			}
 		}
 
-		
+
 		void erase(val_type const& value) {
 			if (head->data == value) {
 				pop_front();
@@ -148,7 +148,7 @@
 				throw "there is no such value";
 			}
 		}
-		
+
 		void pop_front() {
 			if (head->next == nullptr && head->prev == nullptr) {
 				delete head;
@@ -161,7 +161,7 @@
 			}
 			--list_length;
 		}
-		
+
 		void pop_back() {
 			if (tail->prev == nullptr) {
 				delete head;
@@ -191,4 +191,5 @@
 		unsigned int list_length;
 	};
 
+}
 #endif

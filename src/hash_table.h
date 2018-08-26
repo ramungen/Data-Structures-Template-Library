@@ -135,7 +135,8 @@ namespace implementation {
 						return false;
 					}
 					Node* iter = head;
-					if (head->data == value) {
+					// equal
+					if (!comp(value, head->data) && !comp(head->data, value)) {
 						if (head->next != nullptr) {
 							head = head->next;
 						}
@@ -145,7 +146,8 @@ namespace implementation {
 					}
 					else {
 						Node* prev = nullptr;
-						while (iter->data != value) {
+						// not equal
+						while (comp(value, iter->data) || comp(iter->data, value)) {
 							if (iter->next == nullptr) {
 								return false;
 							}

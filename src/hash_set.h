@@ -10,8 +10,8 @@ namespace data_structures {
 
 		class hash_set {
 		public:
-			using iterator = typename hash_table<key_type>::iterator;
-			using const_iterator = typename hash_table<key_type>::const_iterator;
+			using iterator = typename implementation::hash_table<key_type>::iterator;
+			using const_iterator = typename implementation::hash_table<key_type>::const_iterator;
 			hash_set() {}
 
 			iterator begin() {
@@ -78,7 +78,7 @@ namespace data_structures {
 			}
 
 		private:
-			hash_table<key_type, prehash, Compare> table;
+			implementation::hash_table<key_type, prehash, Compare> table;
 	};
 
 

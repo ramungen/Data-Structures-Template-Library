@@ -7,8 +7,8 @@ namespace data_structures {
 	class set {
 
 	public:
-		using iterator = typename AVL_tree<val_type>::tree_iterator;
-		using const_iterator = typename AVL_tree<const val_type>::tree_iterator;
+		using iterator = typename implementation::AVL_tree<val_type>::tree_iterator;
+		using const_iterator = typename implementation::AVL_tree<const val_type>::tree_iterator;
 
 		set() {}
 
@@ -70,7 +70,7 @@ namespace data_structures {
 		
 
 	private:
-		AVL_tree<val_type, compare> tree;
+		implementation::AVL_tree<val_type, compare> tree;
 	};
 
 }

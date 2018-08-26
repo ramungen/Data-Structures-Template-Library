@@ -36,8 +36,8 @@ namespace data_structures {
 
 
 		public:
-			using iterator = typename hash_table<pair, map_prehash, map_compare>::iterator;
-			using const_iterator = typename hash_table<pair, map_prehash, map_compare>::const_iterator;
+			using iterator = typename implementation::hash_table<pair, map_prehash, map_compare>::iterator;
+			using const_iterator = typename implementation::hash_table<pair, map_prehash, map_compare>::const_iterator;
 
 			hash_map(float factor = 0.75f) : table(factor) {}
 
@@ -85,15 +85,23 @@ namespace data_structures {
 				}
 				return it->second;
 			}
+			void insert(const pair& elem) {
+				table.insert(elem);
+			}
+
 			void insert(pair&& elem) {
 				table.insert(std::forward<pair>(elem));
 			}
 
 			void insert(const std::initializer_list<key_type>& list) {
-				table.insert(list);
+				for (auto elem : list) {
+					table.insert(elem);
+				}
 			}
 			void insert(std::initializer_list<key_type>&& list) {
-				table.insert(std::move(list));
+				for (auto elem : list) {
+					table.insert(std::move(elem));
+				}
 			}
 
 			size_t count(const key_type& key) {
@@ -120,7 +128,8 @@ namespace data_structures {
 
 
 			void erase(const key_type& key) {
-				table.erase();
+				val_type dummy;
+				table.erase(std::make_pair(key, dummy));
 			}
 
 
@@ -149,7 +158,7 @@ namespace data_structures {
 			}
 		private:
 
-			hash_table<pair, map_prehash, map_compare> table;
+			implementation::hash_table<pair, map_prehash, map_compare> table;
 	};
 }
 #endif

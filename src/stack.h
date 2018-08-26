@@ -1,5 +1,5 @@
-#pragma once
-
+#ifndef STACK_H
+#define STACK_H
 #include <exception>
 namespace data_structures {
 
@@ -120,3 +120,5 @@ namespace data_structures {
 	};
 
 }
+
+#endif

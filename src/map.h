@@ -19,8 +19,8 @@ namespace data_structures {
 		};
 
 	public:
-		using iterator = typename AVL_tree<pair, map_compare>::iterator;
-		using const_iterator = typename AVL_tree<pair, map_compare>::const_iterator;
+		using iterator = typename implementation::AVL_tree<pair, map_compare>::iterator;
+		using const_iterator = typename implementation::AVL_tree<pair, map_compare>::const_iterator;
 
 		~map() {
 			clear();
@@ -109,7 +109,7 @@ namespace data_structures {
 		}
 
 	private:
-		AVL_tree<pair, map_compare> tree;
+		implementation::AVL_tree<pair, map_compare> tree;
 	};
 
 }
