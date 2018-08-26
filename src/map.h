@@ -6,8 +6,9 @@ namespace data_structures {
 	template <typename key_type, typename val_type, typename compare = std::less<key_type> >
 	class map {
 	private:
-		using pair = std::pair<key_type, val_type>;
-		// compares pairs by their keys
+		using pair = std::pair<const key_type, val_type>;
+
+		// functor that compares pairs by their keys
 		class map_compare {
 		private:
 			compare comp;
@@ -18,17 +19,16 @@ namespace data_structures {
 		};
 
 	public:
-		using iterator = typename AVL_tree<pair, map_compare>::tree_iterator;
+		using iterator = typename AVL_tree<pair, map_compare>::iterator;
+		using const_iterator = typename AVL_tree<pair, map_compare>::const_iterator;
 
-
-		map(const map<key_type, val_type>& other)  : tree(other) {}
 		~map() {
 			clear();
 		}
 		map() {}
 
 		map(const map& oth) {
-
+			this->tree = oth->tree;
 		}
 		
 		map(map&& oth) {
@@ -43,6 +43,12 @@ namespace data_structures {
 		void insert(pair&& value) {
 			tree.insert(std::move(value));
 		}
+		void insert(const std::initializer_list<pair>& list) {
+			for (auto elem : list) {
+				insert(elem);
+			}
+		}
+
 		void erase(const key_type& key) {
 			val_type dummy;
 			tree.erase(std::make_pair(key, dummy));
@@ -52,12 +58,20 @@ namespace data_structures {
 			if (it == end()) {
 				throw std::out_of_range("the specified element does not exist in the container");
 			}
-			return find(key)->second;
+			return it->second;
 		}
 
-		iterator find(const key_type& key) const {
+		const_iterator find(const key_type& key) const {
 			val_type dummy;
 			return tree.find(std::make_pair(key, dummy));
+		}
+
+		const_iterator cbegin() {
+			return tree.cbegin();
+		}
+
+		const_iterator cend() {
+			return tree.cend();
 		}
 
 		void clear() {
@@ -77,10 +91,6 @@ namespace data_structures {
 
 		bool empty() const {
 			return tree.empty();
-		}
-
-		void emplace(pair& Args... args) {
-
 		}
 
 		val_type& operator[](const key_type& key) {

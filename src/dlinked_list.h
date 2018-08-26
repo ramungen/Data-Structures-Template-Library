@@ -1,20 +1,21 @@
 
-#ifndef LIST_H
-#define LIST_H
+#ifndef DLINKED_LIST
+#define DLINKED_LIST
 
-#include <iostream>
+#include <utility>
 
-	template<class T>
-	class DList {
+    // doubly linked list
+	template<class val_type>
+	class dlinked_list {
 	public:
 		
-		DList() :
+		dlinked_list() :
 			head(nullptr),
 			tail(nullptr),
-			listLength(0)
+			list_length(0)
 		{}
 
-		DList(const DList<T>& rhs) {
+		dlinked_list(const dlinked_list<val_type>& rhs) {
 			Node* iter = rhs.head;
 			while (iter) {
 				push_back(iter->data);
@@ -24,13 +25,23 @@
 
 		}
 
-		DList(DList<T>&& rhs) : head(nullptr), tail(nullptr), listLength(0) {
-			std::swap(this->head, rhs.head);
-			std::swap(this->tail, rhs.tail);
-			std::swap(this->listLength, rhs.listLength);
+		dlinked_list(const std::initializer_list<val_type>& list) {
+			for (auto elem : list) {
+				insert(elem);
+			}
 		}
 
-		~DList() {
+		dlinked_list(dlinked_list<val_type>&& rhs) : head(nullptr), tail(nullptr), list_length(0) {
+			std::swap(this->head, rhs.head);
+			std::swap(this->tail, rhs.tail);
+			std::swap(this->list_length, rhs.list_length);
+		}
+
+		~dlinked_list() {
+			clear();
+			
+		}
+		void clear() {
 			Node* iter = head;
 			Node* next = iter;
 			while (iter) {
@@ -38,21 +49,21 @@
 				delete iter;
 				iter = next;
 			}
-		}
-
-		
-		DList<T>& operator=(DList<T>&& rhs) {
 			head = nullptr;
 			tail = nullptr;
-			listLength = 0;
+			list_length = 0;
+		}
+		
+		dlinked_list<val_type>& operator=(dlinked_list<val_type>&& rhs) {
+			clear();
 			std::swap(head, rhs.head);
 			std::swap(tail, rhs.tail);
-			std::swap(listLength, rhs.listLength);
+			std::swap(list_length, rhs.list_length);
 			return *this;
 		}
 
 		
-		DList<T>& operator=(const DList<T>& rhs) {
+		dlinked_list<val_type>& operator=(const dlinked_list<val_type>& rhs) {
 			Node* iter = rhs.head;
 			while (iter) {
 				push_back(iter->data);
@@ -63,7 +74,7 @@
 		}
 
 		
-		void append(DList<T>&& other) {
+		void append(dlinked_list<val_type>&& other) {
 			this->tail->next = other.head;
 			if (other.head) {
 				other.head.prev = this->tail;
@@ -72,11 +83,8 @@
 		}
 
 		
-		void push_front(T const& value) {
-			Node* newNode = new Node;
-			newNode->data = value;
-			newNode->prev = nullptr;
-			newNode->next = nullptr;
+		void push_front(val_type const& value) {
+			Node* newNode = new Node(value);
 			if (head == nullptr) {
 				head = newNode;
 				head->next = nullptr;
@@ -93,28 +101,26 @@
 					tail = head;
 				}
 			}
-			++listLength;
+			++list_length;
 
 		}
 		
-		void push_back(T const& value) {
+		void push_back(val_type const& value) {
 			if (head == nullptr) {
 				push_front(value);
 			}
 			else {
-				Node* newNode = new Node;
-
-				newNode->data = value;
+				Node* newNode = new Node(value);
 				tail->next = newNode;
 				newNode->prev = tail;
 				tail = newNode;
 				tail->next = nullptr;
-				++listLength;
+				++list_length;
 			}
 		}
 
 		
-		void erase(T const& value) {
+		void erase(val_type const& value) {
 			if (head->data == value) {
 				pop_front();
 			}
@@ -134,7 +140,7 @@
 						}
 						delete iter;
 						iter = nullptr;
-						--listLength;
+						--list_length;
 						return;
 					}
 					iter = iter->next;
@@ -153,7 +159,7 @@
 				delete head->prev;
 				head->prev = nullptr;
 			}
-			--listLength;
+			--list_length;
 		}
 		
 		void pop_back() {
@@ -167,39 +173,22 @@
 				delete tail->next;
 				tail->next = nullptr;
 			}
-			--listLength;
+			--list_length;
 		}
-
-		
-		/*void print() const {
-			Node* iter = head;
-			while (iter) {
-				std::cout << iter->data << "->";
-				iter = iter->next;
-			}
-			std::cout << "NULL\n";
-		}
-
-		
-		void print_reverse() const {
-			Node* iter = tail;
-			while (iter) {
-				std::cout << iter->data << ' ';
-
-				iter = iter->prev;
-			}
-			std::cout << '\n';
-		}*/
 
 	private:
 		struct Node {
+			Node(const val_type& val) : data(val), next(nullptr), prev(nullptr) {}
+
 			Node* next;
 			Node* prev;
-			T data;
+			val_type data;
+
+
 		};
 		Node* head;
 		Node* tail;
-		unsigned int listLength;
+		unsigned int list_length;
 	};
 
 #endif

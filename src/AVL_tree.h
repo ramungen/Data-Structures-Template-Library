@@ -1,4 +1,6 @@
-#pragma once
+#ifndef AVL_TREE_H
+#define AVL_TREE_H
+
 #include <string>
 #include <utility>
 
@@ -93,7 +95,6 @@ namespace data_structures {
 				return *this;
 			}
 			forward_iterator operator++(int) {
-				// current being nullptr is hanled in operator++()
 				forward_iterator temp(this);
 				operator++();
 				return temp;
@@ -123,9 +124,8 @@ namespace data_structures {
 		};
 
 	public:
-		using tree_iterator = forward_iterator<key_type>;
-
-
+		using iterator = forward_iterator<key_type>;
+		using const_iterator = forward_iterator<const key_type>;
 
 	public:
 		AVL_tree() : head(nullptr), size_(0) {}
@@ -167,31 +167,44 @@ namespace data_structures {
 			this->clear();
 		}
 
-		bool empty() {
+		bool empty() const {
 			return head == nullptr;
 		}
-		size_t size() {
+		size_t size() const {
 			return size_;
 		}
 
-		tree_iterator begin() const {
+		const_iterator cbegin() const {
+			if (head == nullptr) {
+				return cend();
+			}
+			std::stack<Node*> s;
+			Node* min = minimum(head, s);
+
+			return const_iterator(min, std::move(s));
+		}
+		const_iterator cend() const {
+			return const_iterator();
+		}
+
+		iterator begin() const {
 			if (head == nullptr) {
 				return end();
 			}
 			std::stack<Node*> s;
 			Node* min = minimum(head, s);
 
-			return tree_iterator(min, std::move(s));
+			return iterator(min, std::move(s));
 		}
-		tree_iterator end() const {
-			return tree_iterator();
+		iterator end() const {
+			return iterator();
 		}
 
-		tree_iterator find(const key_type& value) const {
+		const_iterator find(const key_type& value) const {
 			Node* current = head;
 			std::stack<Node*> parents;
 			while (current != nullptr) {
-				//parents.push(current);
+
 				if (comp(value, current->data)) {
 					// we only keep track of items bigger than our data
 					parents.push(current);
@@ -201,10 +214,10 @@ namespace data_structures {
 					current = current->right;
 				}
 				else {
-					return tree_iterator(current, parents);
+					return const_iterator(current, parents);
 				}
 			}
-			return end();
+			return cend();
 		}
 
 		void clear() {
@@ -236,7 +249,7 @@ namespace data_structures {
 
 		void insert(const key_type& value) {
 
-			if (find(value) != end()) {
+			if (find(value) != cend()) {
 				return;
 			}
 
@@ -554,7 +567,7 @@ namespace data_structures {
 			}
 		}
 
-		int get_height(Node* current) {
+		int get_height(Node* current) const {
 			if (current == nullptr) {
 				return -1;
 			}
@@ -570,10 +583,11 @@ namespace data_structures {
 			return 1 + std::max(leftH, rightH);
 		}
 
-		int get_factor(Node* current) {
+		int get_factor(Node* current) const {
 			return get_height(current->right) - get_height(current->left);
 		}
 
 	};
 }
 
+#endif

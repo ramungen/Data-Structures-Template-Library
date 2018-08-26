@@ -8,6 +8,31 @@ namespace data_structures {
 
 	public:
 		using iterator = typename AVL_tree<val_type>::tree_iterator;
+		using const_iterator = typename AVL_tree<const val_type>::tree_iterator;
+
+		set() {}
+
+		set(const set& oth) {
+			this->tree = oth->tree;
+		}
+		
+		set(const std::initializer_list<val_type>& list) : tree(list) {
+		}
+
+		set(set&& oth) {
+			tree(std::move(oth.tree));
+		}
+		set& operator=(set&& oth) {
+			tree = std::move(oth.tree);
+		}
+
+		const_iterator cbegin() {
+			return tree.begin():
+		}
+
+		const_iterator cend() {
+			return tree.end();
+		}
 
 		iterator begin() {
 			return tree.begin();
@@ -15,7 +40,7 @@ namespace data_structures {
 		iterator end() {
 			return tree.end();
 		}
-		iterator find(const val_type& value) {
+		const_iterator find(const val_type& value) {
 			return tree.find(value);
 		}
 

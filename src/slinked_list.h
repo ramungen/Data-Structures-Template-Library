@@ -1,27 +1,21 @@
-#ifndef SLIST_H
-#define SLIST_H
+#ifndef SLINKED_LIST_H
+#define SLINKED_LIST_H
 
 
 #include <iostream>
 #include <iterator>
 
-/*
- NEED TO :
- 1. change iterator typedefs
-*/
-
-template <typename T>
-class SList {
+template <typename val_type>
+class slinked_list {
 
 private:
 	struct Node;
 
-	template<typename T>
+	template<typename val_type>
 	class forward_iterator {
 
 		using iterator_category = std::forward_iterator_tag;
 		using value_type = Node;
-		using difference_type = std::ptrdiff_t;
 		using pointer = Node*;
 		using reference = Node&;
 
@@ -57,13 +51,13 @@ private:
 		bool operator !=(const forward_iterator& rhs) const {
 			return ptr != rhs.ptr;
 		}
-		T& operator*() const {
+		val_type& operator*() const {
 			if (ptr == nullptr) {
 				throw std::exception("error dereferencing an invalid iterator");
 			}
 			return ptr->data;
 		}
-		T* operator->() const {
+		val_type* operator->() const {
 			if (ptr == nullptr) {
 				throw std::exception("error dereferencing an invalid iterator");
 			}
@@ -80,21 +74,21 @@ private:
 
 public:
 
-	typedef forward_iterator<T> iterator;
-	typedef forward_iterator<const T> const_iterator;
+	typedef forward_iterator<val_type> iterator;
+	typedef forward_iterator<const val_type> const_iterator;
 
-	iterator begin() {
+	iterator begin() const {
 		return iterator(head);
 	}
 
-	const_iterator begin() const {
+	const_iterator cbegin() const {
 		return const_iterator(head);
 	}
 
-	iterator end() {
+	iterator end() const {
 		return iterator();
 	}
-	const_iterator end() const {
+	const_iterator cend() const {
 		Node* last = nullptr;
 		return const_iterator(last);
 	}
@@ -102,7 +96,7 @@ public:
 	bool empty() {
 		return listLength == 0;
 	}
-	iterator find(const T& value) {
+	iterator find(const val_type& value) {
 
 		Node* iter = head;
 		while (iter) {
@@ -115,25 +109,21 @@ public:
 		return it;
 	}
 
-	SList() :
+	slinked_list() :
 		listLength(0), head(nullptr)
 	{}
 
-	void push_front(const T&& value) {
-		Node* temp = new Node;
-		temp->data = value;
-		temp->next = nullptr;
+	void push_front(const val_type&& value) {
+		Node* temp = new Node(std::move(value));
 		temp->next = head;
 		head = temp;
 		++listLength;
 	}
 
 	
-	void push_front(const T& value) {
+	void push_front(const val_type& value) {
 
-		Node* temp = new Node;
-		temp->data = value;
-		temp->next = nullptr;
+		Node* temp = new Node(value);
 		temp->next = head;
 		head = temp;
 		++listLength;
@@ -153,14 +143,14 @@ public:
 		head = iter;
 	}
 
-	SList(SList<T>&& rhs) :
+	slinked_list(slinked_list<val_type>&& rhs) :
 		head(nullptr), listLength(0)
 	{
 		std::swap(head, rhs.head);
 		std::swap(listLength, rhs.listLength);
 	}
 	
-	SList(SList<T>& rhs) :
+	slinked_list(slinked_list<val_type>& rhs) :
 		listLength(rhs.listLength)
 	{
 		if (rhs.head) {
@@ -172,7 +162,7 @@ public:
 		}
 	}
 	
-	SList<T>& operator=(SList<T>&& rhs) { 
+	slinked_list<val_type>& operator=(slinked_list<val_type>&& rhs) { 
 		std::swap(head, rhs.head);
 		std::swap(listLength, rhs.listLength);
 		~rhs;
@@ -180,17 +170,15 @@ public:
 	}
 
 	
-	SList<T>& operator=(SList<T>& rhs) {
+	slinked_list<val_type>& operator=(slinked_list<val_type>& rhs) {
 		head = rhs.head;
 		listLength = rhs.head;
 		return *this;
 	}
 
 
-	void push_back(T value) {
-		Node* temp = new Node;
-		temp->data = value;
-		temp->next = nullptr;
+	void push_back(val_type value) {
+		Node* temp = new Node(value);
 		last = temp;
 		if (!head) {
 			head = temp;
@@ -206,7 +194,7 @@ public:
 	}
 
 
-	bool erase(T value) {
+	bool erase(val_type value) {
 		if (head == nullptr) {
 			return false;
 		}
@@ -237,7 +225,7 @@ public:
 	}
 
 	
-	SList<T> merge(SList& second) {
+	slinked_list<val_type> merge(slinked_list& second) {
 		if (this->head == nullptr) {
 			return second;
 		}
@@ -255,10 +243,9 @@ public:
 	}
 
 	
-	void insert_at(unsigned int at, T value) {
+	void insert_at(unsigned int at, val_type value) {
 
-		Node* newNode = new Node;
-		newNode->data = value;
+		Node* newNode = new Node(value);
 		if (at == 0) {
 			if (head == nullptr) {
 				head = newNode;
@@ -302,7 +289,7 @@ public:
 	}
 
 	
-	SList<T> operator+(SList<T> other) {
+	slinked_list<val_type> operator+(slinked_list<val_type>& other) {
 		if (head == nullptr) {
 			return other;
 		}
@@ -316,7 +303,7 @@ public:
 
 
 	
-	~SList() {
+	~slinked_list() {
 		Node* next = nullptr;
 		if (head) {
 			next = head->next;
@@ -334,25 +321,6 @@ public:
 	unsigned int length() {
 		return listLength;
 	}
-
-	//
-	//void print() const {
-	//	Node* iter = head;
-	//	while (iter != nullptr) {
-	//		std::cout << iter->data << " --> ";
-	//		iter = iter->next;
-	//	}
-	//	std::cout << "NULL\n";
-	//}
-
-	//void printMap() const {
-	//	Node* iter = head;
-	//	while (iter != nullptr) {
-	//		std::cout << iter->data.first << '(' << iter->data.second << ')' << " --> ";
-	//		iter = iter->next;
-	//	}
-	//	std::cout << "NULL\n";
-	//}
 
 	
 	void sort() {
@@ -372,9 +340,9 @@ public:
 
 private:
 	struct Node {
-
+		Node(const val_type& val) : data(val), next(nullptr) {}
 		Node* next;
-		T data;
+		val_type data;
 	};
 
 

@@ -1,54 +1,43 @@
-#ifndef HASHMAP_H
-#define HASHMAP_H
+#ifndef HASH_TABLE_H
+#define HASH_TABLE_H
 
-
-#include <functional>
-#include <random>
-#include <utility>
 #include <vector>
-#include <iostream>
+#include <algorithm>
+#include <random>
 #include <initializer_list>
 
+
+
+
 /*
-	TODO:
-	1. remove code similarities with HashSet via inheritance/composition
-	2. implement const_iterator
+TODO:
+1. remove code similarities with HashMap via inheritance/composition
+2. implement const_iterator
 */
 namespace data_structures {
+	template <typename key_type,
+		typename prehash = std::hash<key_type> , class Compare = std::less<key_type> >
 
-	template<typename key_type, typename val_type,
-		typename prehash = std::hash<key_type> >
-
-		class HashMap {
+		class hash_table {
 
 		private:
 
-			typedef typename std::pair<const key_type, val_type> pair;
-
-
-
 			struct Node {
-				Node(pair&& elem) :
-					data(std::move(elem)),
-					next(nullptr) {
+				Node() = delete;
+				Node(const key_type& key) :
+					data(key), next(nullptr) {}
 
-				}
-				Node(const key_type& first, const val_type& second) :
-					data(first, second),
-					next(nullptr) {
-
-				}
 				Node* next;
-				pair data;
+				key_type data;
 			};
 
+		private:
 
 			class bucket_iterator {
 
 				using iterator_category = std::forward_iterator_tag;
 				using pointer = Node * ;
 				using reference = Node & ;
-
 
 			public:
 
@@ -82,13 +71,13 @@ namespace data_structures {
 				bool operator !=(const bucket_iterator& rhs) const {
 					return ptr != rhs.ptr;
 				}
-				pair& operator*() const {
+				key_type& operator*() const {
 					if (ptr == nullptr) {
 						throw std::exception("error dereferencing an invalid iterator");
 					}
 					return ptr->data;
 				}
-				pair* operator->() const {
+				key_type* operator->() const {
 					if (ptr == nullptr) {
 						throw std::exception("error dereferencing an invalid iterator");
 					}
@@ -97,10 +86,7 @@ namespace data_structures {
 
 			private:
 				pointer ptr;
-
 			};
-
-
 
 			class Bucket {
 
@@ -110,17 +96,18 @@ namespace data_structures {
 					return bucket_iterator(head);
 				}
 
-
 				bucket_iterator end() {
 					return bucket_iterator();
 				}
 
-
+				bool empty() {
+					return list_length == 0;
+				}
 				bucket_iterator find(const key_type& value) {
 
 					Node* iter = head;
 					while (iter) {
-						if (iter->data.first == value) {
+						if (!comp(value, iter->data) && !comp(iter->data, value)) {
 							return bucket_iterator(iter);
 						}
 						iter = iter->next;
@@ -128,73 +115,43 @@ namespace data_structures {
 					bucket_iterator it(iter);
 					return it;
 				}
-				bool empty() {
-					return list_length == 0;
-				}
 
 				Bucket() :
 					list_length(0), head(nullptr) {}
 
-				void push_front(pair&& value) {
-
+				void push_front(key_type&& value) {
 					Node* temp = new Node(std::move(value));
-					temp->next = nullptr;
 					temp->next = head;
 					head = temp;
 					++list_length;
 				}
 
-				val_type& create_if_not_found(const key_type& key) {
-					if (head == nullptr) {
-						val_type new_value;
-						if (std::is_arithmetic<val_type>::value) { // custom constructs only arithmetic types
-							new_value = 0;
-						}
-						Node* new_node = new Node(key, new_value);
-						head = new_node;
-						head->next = nullptr;
-						++list_length;
-						return head->data.second;
-					}
-					Node* iter = head;
-					while (iter->next != nullptr) {
-						if (iter->data.first == key) {
-							return iter->data.second;
-						}
-					}
-					val_type new_value;
-					if (std::is_arithmetic<val_type>::value) { // custom constructs only arithmetic types
-						new_value = 0;
-					}
 
-					Node* new_node = new Node(key, new_value);
-					iter->next = new_node;
-					++list_length;
-					return new_node->data.second;
-				}
+				void push_front(const key_type& value) {
 
-
-				void push_front(const pair& value) {
-
-					Node* temp = new Node(value.first, value.second);
-					temp->next = nullptr;
+					Node* temp = new Node(value);
 					temp->next = head;
 					head = temp;
 					++list_length;
 				}
+
 
 				bool erase(const key_type& value) {
-
 					if (head == nullptr) {
 						return false;
 					}
 					Node* iter = head;
-					if (head->data.first == value) {
-						head = head->next;
+					if (head->data == value) {
+						if (head->next != nullptr) {
+							head = head->next;
+						}
+						else {
+							head = nullptr;
+						}
 					}
 					else {
 						Node* prev = nullptr;
-						while (iter->data.first != value) {
+						while (iter->data != value) {
 							if (iter->next == nullptr) {
 								return false;
 							}
@@ -209,13 +166,13 @@ namespace data_structures {
 					return true;
 				}
 
+
 				~Bucket() {
 					Node* next = nullptr;
 					if (head) {
 						next = head->next;
 						delete head;
 					}
-
 					Node* curr;
 					while (next) {
 						curr = next;
@@ -224,30 +181,20 @@ namespace data_structures {
 					}
 				}
 
-
-				unsigned int size() {
+				unsigned int length() {
 					return list_length;
 				}
-
-				/*void printMap() const {
-					Node* iter = head;
-					while (iter != nullptr) {
-						std::cout << iter->data.first << '(' << iter->data.second << ')' << " --> ";
-						iter = iter->next;
-					}
-					std::cout << "NULL\n";
-				}*/
 
 			private:
 
 				Node * head;
 				unsigned int list_length;
-
+				Compare comp;
 			};
 
-
-			std::vector< Bucket > map;
-			unsigned int elements;
+		private:
+			std::vector< Bucket > table;
+			size_t elements;
 			static const unsigned int starting_size;
 			prehash prehasher;
 			int rand1, rand2;
@@ -257,15 +204,18 @@ namespace data_structures {
 
 			float load_factor;
 
+
 		private:
 
+			template<typename key_type>
 			class forward_iterator {
 				using iterator_category = std::forward_iterator_tag;
 				using pointer = Bucket * ;
 				using reference = Bucket & ;
-				using value = std::pair<const key_type, val_type>;
+				using value = key_type;
+				//using value = std::pair<const key_type, val_type>;
 
-				friend class HashMap; // to access private constructors
+				friend class hash_table; // to access private constructors
 			public:
 				forward_iterator() :
 					ptr(nullptr),
@@ -284,11 +234,11 @@ namespace data_structures {
 					pos(rhs.pos) {}
 
 			private:
-				forward_iterator(pointer p, bucket_iterator liter, HashMap* prnt, long long int pos_) : ptr(p),
+				forward_iterator(pointer p, bucket_iterator liter, hash_table* prnt, long long int pos_) : ptr(p),
 					ptr_it(liter),
 					parent(prnt),
 					pos(pos_) {}
-				forward_iterator(reference p, bucket_iterator liter, HashMap* prnt, long long int pos_) :
+				forward_iterator(reference p, bucket_iterator liter, hash_table* prnt, long long int pos_) :
 					ptr(p),
 					ptr_it(liter),
 					parent(prnt),
@@ -320,7 +270,7 @@ namespace data_structures {
 							ptr_it = ptr->end();
 							return *this;
 						}
-						while (parent->map[pos].empty()) {
+						while (parent->table[pos].empty()) {
 							++pos;
 							if (pos > parent->end_pos) {
 								ptr = nullptr;
@@ -328,7 +278,7 @@ namespace data_structures {
 								return *this;
 							}
 						}
-						ptr = &(parent->map[pos]);
+						ptr = &(parent->table[pos]);
 						ptr_it = ptr->begin();
 					}
 
@@ -368,25 +318,22 @@ namespace data_structures {
 
 				pointer ptr;
 				bucket_iterator ptr_it;
-				HashMap* parent;
+				hash_table* parent;
 				long long int pos;
 			};
 
 
-
 		public:
 
-			typedef bucket_iterator local_iterator;
-			typedef typename HashMap<key_type, val_type>::forward_iterator iterator;
+			using iterator = forward_iterator<key_type>;
+			using const_iterator = forward_iterator<const key_type>;
 
-
-
-			HashMap(float factor = 0.75f) :
+			hash_table(float factor = 0.75f) :
 				load_factor(factor),
 				elements(0),
 				start_pos(INT_MAX),
 				end_pos(-1),
-				map(starting_size) {
+				table(starting_size) {
 
 				if (load_factor >= 1) {
 					load_factor = 0.75f; // default value
@@ -399,8 +346,8 @@ namespace data_structures {
 				rand2 = U(generator);
 			}
 
-			HashMap(const std::initializer_list<std::pair<key_type, val_type> >& list)
-				: HashMap()
+			hash_table(const std::initializer_list<key_type>& list)
+				: hash_table()
 
 			{
 				for (const auto& elem : list) {
@@ -408,30 +355,31 @@ namespace data_structures {
 				}
 			}
 
-			HashMap(HashMap& oth) :
+			hash_table(hash_table& oth) :
 				elements(oth.elements),
 				prehasher(oth.prehasher),
 				rand1(oth.rand1),
 				rand2(oth.rand2),
 				start_pos(oth.start_pos),
 				end_pos(oth.end_pos),
-				map(oth.map.size()) {
+				table(oth.table.size()) {
 
 				for (auto& elem : oth) {
 
-					long long int hash_key = hash(map.size(), elem.first);
-					map[hash_key].push_front(elem);
+					long long int hash_key = hash(elem, table.size());
+					table[hash_key].push_front(elem);
 				}
 
 			}
-			HashMap(HashMap&& oth) :
+			hash_table(hash_table&& oth) :
 				elements(0),
 				rand1(0),
 				rand2(0),
 				start_pos(0),
 				end_pos(0),
 				load_factor(0) {
-				map.swap(oth.map);
+
+				table.swap(oth.table);
 				std::swap(load_factor, oth.load_factor);
 				std::swap(elements, oth.elements);
 				std::swap(prehasher, oth.prehasher);
@@ -442,7 +390,8 @@ namespace data_structures {
 
 			}
 
-			HashMap& operator=(HashMap& rhs) { // needs optimizing
+			hash_table& operator=(const hash_table& rhs) { // needs optimizing
+
 				clear();
 				load_factor = rhs.load_factor;
 				prehasher = rhs.prehasher;
@@ -452,18 +401,19 @@ namespace data_structures {
 				start_pos = rhs.start_pos;
 				end_pos = rhs.end_pos;
 
-				map.resize(rhs.map.size());
-				for (auto& elem : rhs) {
+				table.resize(rhs.table.size());
 
-					long long int hash_key = hash(map.size(), elem.first);
-					map[hash_key].push_front(elem);
+				for (auto elem : rhs) {
+
+					long long int hash_key = hash(elem, table.size());
+					table[hash_key].push_front(elem);
 				}
 
 				return *this;
 			}
-			HashMap& operator=(HashMap&& rhs) {
+			hash_table& operator=(hash_table&& rhs) {
 				clear();
-				map.swap(rhs.map);
+				table.swap(rhs.table);
 				std::swap(elements, rhs.elements);
 				prehasher = rhs.prehasher;
 				rand1 = rhs.rand1;
@@ -473,91 +423,74 @@ namespace data_structures {
 				return *this;
 			}
 
-			~HashMap() {
+			const_iterator find(const key_type& key) {
+				long long int hash_key = hash(table.size(), key);
 
+				bucket_iterator list_iter = table[hash_key].find(key);
+
+				if (list_iter == table[hash_key].end()) {
+					return cend();
+				}
+				else {
+					return const_iterator(&table[hash_key], list_iter, this, hash_key);
+				}
+			}
+
+			const_iterator cbegin() {
+				if (empty()) {
+					return cend();
+				}
+				const_iterator it(&table[start_pos], table[start_pos].begin(), this, start_pos);
+				return it;
+			}
+
+			const_iterator cend() {
+				return const_iterator();
 			}
 
 			iterator begin() {
 				if (empty()) {
 					return end();
 				}
-				iterator it(&map[start_pos], map[start_pos].begin(), this, start_pos);
+				iterator it(&table[start_pos], table[start_pos].begin(), this, start_pos);
 				return it;
 			}
+
 			iterator end() {
 				return iterator();
 			}
 
+			void insert(const key_type& key) {
+				int hash_key = hash(table.size(), key);
 
-
-
-			iterator find(const key_type& key) {
-
-				long long int hash_key = hash(map.size(), key);
-
-				bucket_iterator list_iter = map[hash_key].find(key);
-
-				if (list_iter == map[hash_key].end()) {
-					return end();
-				}
-				else {
-					return iterator(&map[hash_key], list_iter, this, hash_key);
-				}
-			}
-
-			val_type& at(const key_type& key) {
-
-				long long int hash_key = hash(map.size(), key);
-
-				bucket_iterator list_iter = map[hash_key].find(key);
-
-				if (list_iter == map[hash_key].end()) {
-					throw std::exception("element not found in the container");
-				}
-				return (*list_iter).second;
-			}
-			void insert(pair&& elem) {
-				long long int hash_key = hash(map.size(), elem.first);
-
-				if (map[hash_key].find(elem.first) == map[hash_key].end()) {
+				if (table[hash_key].find(key) == table[hash_key].end()) {
 					update_start_and_end(hash_key);
 
-					map[hash_key].push_front(std::forward<pair>(elem));
+					table[hash_key].push_front(key);
 					++elements;
 					grow();
 				}
 			}
-			void insert(const pair& elem) {
+			void insert(key_type&& key) {
+				int hash_key = hash(table.size(), key);
 
-				long long int hash_key = hash(map.size(), elem.first);
-
-				if (map[hash_key].find(elem.first) == map[hash_key].end()) {
+				if (table[hash_key].find(key) == table[hash_key].end()) {
 					update_start_and_end(hash_key);
 
-					map[hash_key].push_front(elem);
+					table[hash_key].push_front(std::move(key));
 					++elements;
 					grow();
 				}
-
 			}
-
-			void insert(std::initializer_list<pair>& list) {
-				for (auto& elem : list) {
-					insert(elem);
+			void insert(const std::initializer_list<key_type>& list) {
+				for (const auto& element : list) {
+					insert(element);
 				}
 			}
-
-			size_t count(const key_type& key) {
-
-				return (find(key) != end()) ? 1 : 0;
-			}
-
-			val_type& operator[](const key_type& key) {
-
-				long long int hash_key = hash(map.size(), key);
-
-				return map[hash_key].create_if_not_found(key);
-
+			void insert(std::initializer_list<key_type>&& list) {
+				for (const auto& element : list) {
+					insert(std::move(element));
+				}
 			}
 
 
@@ -566,9 +499,9 @@ namespace data_structures {
 					return;
 				}
 
-				long long int hash_key = hash(map.size(), key);
+				int hash_key = hash(table.size(), key);
 
-				if (map[hash_key].erase(key)) {
+				if (table[hash_key].erase(key)) {
 
 					--elements;
 
@@ -583,21 +516,31 @@ namespace data_structures {
 				}
 			}
 
+			size_t buckets() {
+				return table.size();
+			}
 
+			size_t size() {
+				return elements;
+			}
+
+			bool empty() {
+				return elements == 0;
+			}
 			void rehash(unsigned int n) {
 				if (n <= elements) {
 					return;
 				}
-				else if (n < map.size() && load_factor * 0.8 >= (float)elements / n) {
+				else if (n < table.size() && load_factor * 0.8 >= (float)elements / n) {
 
 					start_pos = 2147483647;
 					end_pos = -1;
 
 					std::vector<Bucket> temp(n);
-					for (auto& bucket : map) {
+					for (auto& bucket : table) {
 						for (auto& element : bucket) {
 
-							long long int hash_key = hash(temp.size(), element.first);
+							int hash_key = hash(temp.size(), element);
 
 							update_start_and_end(hash_key);
 
@@ -605,40 +548,41 @@ namespace data_structures {
 						}
 					}
 
-					map = std::move(temp);
+					table = std::move(temp);
 				}
 				else {
 
 					start_pos = INT_MAX;
 					end_pos = -1;
-					int possibility = (int)((float)map.size() * 1.15f);
+					int possibility = (int)((float)table.size() * 1.15f);
 					if (possibility > n) {
 						n = possibility;
 					}
 					std::vector< Bucket > temp(n);
-					for (auto& bucket : map) {
+					for (auto& bucket : table) {
 						for (auto& element : bucket) {
 
-							long long int key = hash(temp.size(), element.first);
+							int key = hash(temp.size(), element);
 
 							update_start_and_end(key);
 
 							temp[key].push_front(element);
 						}
 					}
-					map = std::move(temp);
+					table = std::move(temp);
 				}
 			}
+
 			void clear() {
-				std::vector< Bucket > new_map(starting_size);
-				map = std::move(new_map);
+				std::vector<Bucket> new_table(starting_size);
+				table = std::move(new_table);
 				elements = 0;
 				start_pos = INT_MAX;
 				end_pos = -1;
 			}
 
 			void reserve(unsigned int n) {
-				if (n < starting_size) {
+				if (n < (float)starting_size *load_factor) {
 					return;
 				}
 				unsigned int new_size = (unsigned int)((float)(n + 1) / load_factor);
@@ -646,39 +590,20 @@ namespace data_structures {
 			}
 
 
-			unsigned int buckets() {
-				return (unsigned int)map.size();
-			}
-
-
-			void traverse() {
-				for (const auto& bucket : map) {
-					bucket.printMap();
-				}
-			}
-
-			int size() {
-				return elements;
-			}
-
-			bool empty() {
-				return elements == 0;
-			}
-
 		private:
 
-			void update_start_and_end(long long int hash_key) {
+			void update_start_and_end(int hash_key) {
 				if (start_pos > hash_key) {
-					start_pos = (int)hash_key;
+					start_pos = hash_key;
 				}
 				if (end_pos < hash_key) {
-					end_pos = (int)hash_key;
+					end_pos = hash_key;
 				}
 			}
 
 			void update_start_pos() {
 				if (empty()) {
-					start_pos = 2147483647;
+					start_pos = INT_MAX;
 					return;
 				}
 				if (elements == 1) {
@@ -686,7 +611,7 @@ namespace data_structures {
 					return;
 				}
 				while (start_pos < end_pos) {
-					if (map[++start_pos].empty() == false) {
+					if (! table[++start_pos].empty()) {
 						return;
 					}
 				}
@@ -701,13 +626,13 @@ namespace data_structures {
 					return;
 				}
 				while (end_pos > start_pos) {
-					if (map[--end_pos].empty() == false) {
+					if (! table[--end_pos].empty()) {
 						return;
 					}
 				}
 			}
 
-			long long int hash(size_t size, const key_type& key) {
+			int hash(size_t size, const key_type& key) {
 
 				long long int prehash_key = prehasher(key);
 				int prime = 8188057;
@@ -715,21 +640,20 @@ namespace data_structures {
 				long long int new_key = (rand1 * prehash_key + rand2);
 				new_key %= prime;
 				new_key %= size;
-				return new_key;
+				return (int)new_key;
 			}
 
 			void shrink() {
-
-				if (map.size() > starting_size && (float)map.size() * load_factor >= elements * 4) {
+				if (table.size() > starting_size && (float)table.size() * load_factor >= elements * 4) {
 
 					start_pos = 2147483647;
 					end_pos = -1;
 
-					std::vector<Bucket> temp((int)((float)map.size() * load_factor / 2));
-					for (auto& bucket : map) {
+					std::vector<Bucket> temp((int)((float)table.size() * load_factor / 2));
+					for (auto& bucket : table) {
 						for (auto& element : bucket) {
 
-							long long int hash_key = hash(temp.size(), element.first);
+							int hash_key = hash(temp.size(), element);
 
 							update_start_and_end(hash_key);
 
@@ -737,23 +661,23 @@ namespace data_structures {
 						}
 					}
 
-					map = std::move(temp);
+					table = std::move(temp);
 				}
 			}
 
 
 			void grow() {
 
-				if ((float)elements / map.size() >= load_factor) {
+				if ((float)elements / table.size() >= load_factor) {
 
 					start_pos = 2147483647;
 					end_pos = -1;
 
-					std::vector<Bucket > temp(2 * map.size());
-					for (auto& bucket : map) {
+					std::vector<Bucket > temp(2 * table.size());
+					for (auto& bucket : table) {
 						for (auto& element : bucket) {
 
-							long long int hash_key = hash(temp.size(), element.first);
+							int hash_key = hash(temp.size(), element);
 
 							update_start_and_end(hash_key);
 
@@ -761,15 +685,15 @@ namespace data_structures {
 							temp[hash_key].push_front(element);
 						}
 					}
-					map = std::move(temp);
+					table = std::move(temp);
 
 				}
 			}
-
 	};
 
-	template<typename key_type, typename val_type,
-		typename prehash = std::hash<key_type> >
-		const unsigned int HashMap<key_type, val_type, prehash>::starting_size = 20;
+	template<typename key_type, typename prehash = std::hash<key_type> , typename Compare = std::less<key_type> >
+	const unsigned int hash_table<key_type, prehash, Compare>::starting_size = 20;
+
 }
+
 #endif
