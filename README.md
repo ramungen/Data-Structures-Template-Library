@@ -1,3 +1,1 @@
-Some data structures implementations
-
-Implementations are not naive and fully working
+Some non-naive and fully working data structures implementations.
