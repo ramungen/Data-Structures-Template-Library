@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-namespace data_structures {
+namespace implementation {
 
 	template <typename key_type, class compare = std::less<key_type> >
 	class AVL_tree {
@@ -302,21 +302,15 @@ namespace data_structures {
 		private:
 
 			void rebalance(std::stack<Node*>& parents) {
-				int total_compensation = 0;
+
 				while (!parents.empty()) {
 
 					Node* current = parents.top();
-
-
-					int load_factor = get_factor(current);
 					current->height = get_height(current);
-					// oldCurrent is needed for adjusting the parent's load factor after a rotation
-					Node* old_current = current;
+					int load_factor = get_factor(current);
 					parents.pop();
 
-					
-					Node* parent;
-					parent = parents.empty() ? nullptr : parents.top();
+					Node* parent = parents.empty() ? nullptr : parents.top();
 
 					// node is doubly left heavy
 					if (load_factor < -1) {
