@@ -7,7 +7,6 @@ namespace data_structures {
 	template <typename key_type, class compare = std::less<key_type> >
 	class AVL_tree {
 
-
 	private:
 
 		struct Node {
@@ -15,19 +14,19 @@ namespace data_structures {
 			key_type data;
 			Node* left;
 			Node* right;
-			// - is left heavy, + is right heavy, 0 is balanced
-			short load_factor;
-
+			// char meaning a 1 byte int in this case
+			char height;
 			Node(const key_type& value) :
 				data(value),
 				right(nullptr),
 				left(nullptr),
-				load_factor(0) {}
+			    height(-1)
+			{}
 			Node(key_type&& value) :
 				data(std::move(value)),
 				right(nullptr),
 				left(nullptr),
-				load_factor(0) {}
+				height(-1) {}
 		};
 
 	private:
@@ -60,7 +59,12 @@ namespace data_structures {
 				parents = rhs.parents;
 				return *this;
 			}
-
+			bool operator==(const forward_iterator& rhs) {
+				return this->current = rhs.current;
+			}
+			bool operator!=(const forward_iterator& rhs) {
+				return this->current != rhs.current;
+			}
 		private:
 			forward_iterator(pointer c, std::stack<pointer> p) : current(c), parents(p) {}
 		public:
@@ -129,6 +133,18 @@ namespace data_structures {
 		AVL_tree(AVL_tree&& oth) : head(nullptr), size_(0) {
 			std::swap(this->head, oth.head);
 			std::swap(this->size_, oth.size_);
+		}
+
+		AVL_tree(const AVL_tree& oth) : size_(0) {
+			// TODO: make this more efficient
+			this->operator=(oth);
+		}
+
+		AVL_tree operator=(const AVL_tree& oth) {
+			this->clear();
+			for (auto elem : oth) {
+				insert(elem);
+			}
 		}
 
 		AVL_tree& operator=(AVL_tree&& oth) {
@@ -234,12 +250,11 @@ namespace data_structures {
 			Node* parent = nullptr;
 			Node* current = head;
 			bool quit = false;
+			bool already_contains = false;
 
 			while (!quit) {
 				if (comp(value, current->data)) {
-
 					parents.push(current);
-					--current->load_factor;
 
 					parent = current;
 					current = current->left;
@@ -251,9 +266,8 @@ namespace data_structures {
 
 				}
 				else if (comp(current->data, value)) {
-
 					parents.push(current);
-					++current->load_factor;
+
 					parent = current;
 					current = current->right;
 					if (current == nullptr) {
@@ -264,18 +278,12 @@ namespace data_structures {
 				}
 				else {
 					quit = true; // the key already exists
-				}
-				if (parent != nullptr) {
-
-					if (std::abs(parent->load_factor) > 1) {
-						need_rebalancing = true;
-					}
-
+					already_contains = true;
 				}
 
 			}
-			if (need_rebalancing && !parents.empty()) {
-				//rebalance(parents);
+			if (!parents.empty() && !already_contains) {
+				rebalance(parents);
 			}
 		}
 		private:
@@ -285,6 +293,10 @@ namespace data_structures {
 				while (!parents.empty()) {
 
 					Node* current = parents.top();
+
+
+					int load_factor = get_factor(current);
+					current->height = get_height(current);
 					// oldCurrent is needed for adjusting the parent's load factor after a rotation
 					Node* old_current = current;
 					parents.pop();
@@ -292,80 +304,64 @@ namespace data_structures {
 					
 					Node* parent;
 					parent = parents.empty() ? nullptr : parents.top();
-					// used to determine how to adjust the parents height after a rotation
-					Node* old_parent_left = (parent == nullptr) ? nullptr : parent->left;
-					// node is doubly left heavy
-					if ((current)->load_factor < -1) {
 
+					// node is doubly left heavy
+					if (load_factor < -1) {
+						int left_factor = get_factor(current->left);
 						// left child is left heavy
-						if ((current)->left->load_factor < 0) {
+						if (left_factor < 0) {
 							++total_compensation;
-							
-							current->load_factor = 0;
-							current->left->load_factor = 0;
+
+							current->height -= 2;
 
 							right_rotate(current, parent);
 						}
 						// left child is balanced
-						else if ((current)->left->load_factor == 0) {
-
-							current->load_factor = -1;
-							current->left->load_factor = 1;
+						else if (left_factor == 0) {
+							
+							current->height--;
+							current->left->height++;
 
 							right_rotate(current, parent);
 						}
 
 						// left child is right heavy
 						else {
-							
-							++total_compensation;
-							current->load_factor = 0;
-							current->left->load_factor = 0;
+							current->left->right->height++;
+							current->left->height--;
+							current->height -= 2;
 
 							left_rotate((current)->left, current);
 							right_rotate(current, parent);
 						}
 					}
 					// node is doubly right heavy
-					else if ((current)->load_factor > 1) {
+					else if (load_factor > 1) {
 
+						int right_factor = get_factor(current->right);
 						// right child is right heavy
-						if (current->right->load_factor > 0) {
-							++total_compensation;
-							
-							current->load_factor = 0;
-							current->right->load_factor = 0;
+						if (right_factor > 0) {
 
+							current->height -= 2;
 							left_rotate(current, parent);
 						}
 						// right child is balanced
-						else if (current->right->load_factor == 0) {
-							current->load_factor = 1;
-							current->right->load_factor = -1;
+						else if (right_factor == 0) {
 
+							current->height--;
+							current->right->height++;
 							left_rotate(current, parent);
 
 						}
 						// right child is left heavy
 						else {
 
-							++total_compensation;
-							current->load_factor = 0;
-							current->right->load_factor = 0;
+							current->right->left->height++;
+							current->right->height--;
+							current->height -= 2;
 
 							right_rotate((current)->right, current);
 							left_rotate(current, parent);
-						}
-					}
-
-					if (parent != nullptr) {
-						// using old values for comparison because current ones change when rotating
-						// but we need the old values in order to determine its parent's load factor
-						if (old_parent_left == old_current) {
-							parent->load_factor += total_compensation;
-						}
-						else {
-							parent->load_factor -= total_compensation;
 						}
 					}
 				}
@@ -375,21 +371,15 @@ namespace data_structures {
 
 			void erase(const key_type& value) {
 
-				// we use this to make it easier to track load factors
-				if (find(value) == end()) {
-					return;
-				}
-
 				Node* parent = nullptr;
 				Node* current = head;
 				std::stack<Node*> parents;
-				bool need_rebalancing = false;
+				bool found = false;
 
 				while (current != nullptr) {
 
 					if (comp(value, current->data)) {
 
-						++current->load_factor;
 						parents.push(current);
 
 						parent = current;
@@ -397,7 +387,6 @@ namespace data_structures {
 					}
 					else if (comp(current->data, value)) {
 
-						--current->load_factor;
 						parents.push(current);
 
 						parent = current;
@@ -406,22 +395,12 @@ namespace data_structures {
 					// found the item to be deleted
 					else {
 						delete_found(current, parent, parents);
-					}
-
-					if (parent != nullptr) {
-						if (std::abs(parent->load_factor) > 1) {
-							need_rebalancing = true;
-						}
-
-
-						if (std::abs(parent->load_factor) > 2) {
-							throw std::exception("rebalancing in delete error; load factors not working			properly");
-						}
+						found = true;
 					}
 				}
 
-				if (!parents.empty() && need_rebalancing) {
-					//rebalance(parents);
+				if (!parents.empty() && found) {
+					rebalance(parents);
 				}
 			}
 	private:
@@ -516,13 +495,11 @@ namespace data_structures {
 			Node* current = node->right;
 			Node* parent = node;
 
-			parent->load_factor--;
 			parents.push(parent);
 
 			while (current->left != nullptr) {
 
 				parent = current;
-				parent->load_factor++;
 				parents.push(parent);
 
 				current = current->left;
@@ -575,6 +552,26 @@ namespace data_structures {
 			else {
 				head = temp;
 			}
+		}
+
+		int get_height(Node* current) {
+			if (current == nullptr) {
+				return -1;
+			}
+			int leftH = -1;
+			int rightH = -1;
+			if (current->left != nullptr) {
+				leftH = current->left->height;
+			}
+			if (current->right != nullptr) {
+				rightH = current->right->height;
+			}
+			
+			return 1 + std::max(leftH, rightH);
+		}
+
+		int get_factor(Node* current) {
+			return get_height(current->right) - get_height(current->left);
 		}
 
 	};

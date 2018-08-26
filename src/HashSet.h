@@ -187,14 +187,14 @@ namespace data_structures {
 				}
 
 
-				void print() const {
+				/*void print() const {
 					Node* iter = head;
 					while (iter != nullptr) {
 						std::cout << iter->data << " --> ";
 						iter = iter->next;
 					}
 					std::cout << "NULL\n";
-				}
+				}*/
 
 			private:
 

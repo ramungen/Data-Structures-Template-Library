@@ -9,8 +9,6 @@
 #include <iostream>
 #include <initializer_list>
 
-
-
 /*
 	TODO:
 	1. remove code similarities with HashSet via inheritance/composition
@@ -231,14 +229,14 @@ namespace data_structures {
 					return list_length;
 				}
 
-				void printMap() const {
+				/*void printMap() const {
 					Node* iter = head;
 					while (iter != nullptr) {
 						std::cout << iter->data.first << '(' << iter->data.second << ')' << " --> ";
 						iter = iter->next;
 					}
 					std::cout << "NULL\n";
-				}
+				}*/
 
 			private:
 
@@ -258,9 +256,6 @@ namespace data_structures {
 			int end_pos;
 
 			float load_factor;
-
-
-
 
 		private:
 
@@ -602,7 +597,6 @@ namespace data_structures {
 					for (auto& bucket : map) {
 						for (auto& element : bucket) {
 
-							//long long int prehashKey = prehasher(element.first);
 							long long int hash_key = hash(temp.size(), element.first);
 
 							update_start_and_end(hash_key);

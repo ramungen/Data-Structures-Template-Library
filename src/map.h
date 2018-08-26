@@ -7,7 +7,7 @@ namespace data_structures {
 	class map {
 	private:
 		using pair = std::pair<key_type, val_type>;
-		// compares pairs by their keys, useful when deleting an element
+		// compares pairs by their keys
 		class map_compare {
 		private:
 			compare comp;
@@ -26,6 +26,11 @@ namespace data_structures {
 			clear();
 		}
 		map() {}
+
+		map(const map& oth) {
+
+		}
+		
 		map(map&& oth) {
 			tree(std::move(oth.tree));
 		}
@@ -74,17 +79,23 @@ namespace data_structures {
 			return tree.empty();
 		}
 
+		void emplace(pair& Args... args) {
+
+		}
+
 		val_type& operator[](const key_type& key) {
-			// TODO: currently this is very inefficient, so make it more efficient
-			if (find(key) == end()) {
+			// TODO: currently this is inefficient, so make it more efficient
+			auto it = find(key);
+			if (it == end()) {
 				val_type value;
 				if (std::is_arithmetic<val_type>::value) {
 					value = 0;
 				}
-				
 				insert(std::make_pair(key, value));
+				it = find(key);
 			}
 			return find(key)->second;
+			
 		}
 
 	private:

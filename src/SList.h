@@ -255,7 +255,7 @@ public:
 	}
 
 	
-	void inset_at(unsigned int at, T value) {
+	void insert_at(unsigned int at, T value) {
 
 		Node* newNode = new Node;
 		newNode->data = value;
@@ -335,24 +335,24 @@ public:
 		return listLength;
 	}
 
-	
-	void print() const {
-		Node* iter = head;
-		while (iter != nullptr) {
-			std::cout << iter->data << " --> ";
-			iter = iter->next;
-		}
-		std::cout << "NULL\n";
-	}
+	//
+	//void print() const {
+	//	Node* iter = head;
+	//	while (iter != nullptr) {
+	//		std::cout << iter->data << " --> ";
+	//		iter = iter->next;
+	//	}
+	//	std::cout << "NULL\n";
+	//}
 
-	void printMap() const {
-		Node* iter = head;
-		while (iter != nullptr) {
-			std::cout << iter->data.first << '(' << iter->data.second << ')' << " --> ";
-			iter = iter->next;
-		}
-		std::cout << "NULL\n";
-	}
+	//void printMap() const {
+	//	Node* iter = head;
+	//	while (iter != nullptr) {
+	//		std::cout << iter->data.first << '(' << iter->data.second << ')' << " --> ";
+	//		iter = iter->next;
+	//	}
+	//	std::cout << "NULL\n";
+	//}
 
 	
 	void sort() {

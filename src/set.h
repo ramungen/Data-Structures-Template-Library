@@ -42,6 +42,7 @@ namespace data_structures {
 		~set() {
 			clear();
 		}
+		
 
 	private:
 		AVL_tree<val_type, compare> tree;

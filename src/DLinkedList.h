@@ -5,16 +5,16 @@
 #include <iostream>
 
 	template<class T>
-	class DLinkedList {
+	class DList {
 	public:
 		
-		DLinkedList() :
+		DList() :
 			head(nullptr),
 			tail(nullptr),
 			listLength(0)
 		{}
 
-		DLinkedList(const DLinkedList<T>& rhs) {
+		DList(const DList<T>& rhs) {
 			Node* iter = rhs.head;
 			while (iter) {
 				push_back(iter->data);
@@ -24,13 +24,13 @@
 
 		}
 
-		DLinkedList(DLinkedList<T>&& rhs) : head(nullptr), tail(nullptr), listLength(0) {
+		DList(DList<T>&& rhs) : head(nullptr), tail(nullptr), listLength(0) {
 			std::swap(this->head, rhs.head);
 			std::swap(this->tail, rhs.tail);
 			std::swap(this->listLength, rhs.listLength);
 		}
 
-		~DLinkedList() {
+		~DList() {
 			Node* iter = head;
 			Node* next = iter;
 			while (iter) {
@@ -41,7 +41,7 @@
 		}
 
 		
-		DLinkedList<T>& operator=(DLinkedList<T>&& rhs) {
+		DList<T>& operator=(DList<T>&& rhs) {
 			head = nullptr;
 			tail = nullptr;
 			listLength = 0;
@@ -52,7 +52,7 @@
 		}
 
 		
-		DLinkedList<T>& operator=(const DLinkedList<T>& rhs) {
+		DList<T>& operator=(const DList<T>& rhs) {
 			Node* iter = rhs.head;
 			while (iter) {
 				push_back(iter->data);
@@ -63,7 +63,7 @@
 		}
 
 		
-		void append(DLinkedList<T>&& other) {
+		void append(DList<T>&& other) {
 			this->tail->next = other.head;
 			if (other.head) {
 				other.head.prev = this->tail;
@@ -171,7 +171,7 @@
 		}
 
 		
-		void print() const {
+		/*void print() const {
 			Node* iter = head;
 			while (iter) {
 				std::cout << iter->data << "->";
@@ -189,7 +189,7 @@
 				iter = iter->prev;
 			}
 			std::cout << '\n';
-		}
+		}*/
 
 	private:
 		struct Node {
