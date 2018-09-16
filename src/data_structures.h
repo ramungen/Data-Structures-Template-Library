@@ -15,5 +15,5 @@ A header that includes all data structures
 #include "structures/set.h"
 #include "structures/slinked_list.h"
 #include "structures/stack.h"
-
+#include "structures/heap.h"
 #endif
