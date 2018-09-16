@@ -1,4 +1,4 @@
-A c++ library of the following data structures:
+A c++ library containing following data structures:
 1. set (based on avl tree)
 2. map (based on avl tree)
 3. queue (based on linked list)
