@@ -7,5 +7,6 @@ A c++ library of the following data structures:
 6. hash_map (based on a hash table)
 7. slinked_list (singly linked list)
 8. dlinked_list (doubly linked list)
+9. heap (based on dynamic array)
 
 The data structures are efficient and non-naive with full functionality.
