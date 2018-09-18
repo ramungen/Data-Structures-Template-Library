@@ -8,5 +8,6 @@ A c++ library containing following data structures:
 7. slinked_list (singly linked list)
 8. dlinked_list (doubly linked list)
 9. heap (based on dynamic array)
+10. Trie
 
 The data structures are efficient and non-naive with full functionality.
