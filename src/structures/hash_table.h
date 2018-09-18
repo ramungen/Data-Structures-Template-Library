@@ -540,7 +540,7 @@ namespace implementation {
 
 							update_start_and_end(hash_key);
 
-							temp[key].push_front(element);
+							temp[hash_key].push_front(element);
 						}
 					}
 
@@ -687,7 +687,7 @@ namespace implementation {
 			}
 	};
 
-	template<typename key_type, typename prehash = std::hash<key_type> , typename Compare = std::less<key_type> >
+	template<typename key_type, typename prehash, typename Compare>
 	const unsigned int hash_table<key_type, prehash, Compare>::starting_size = 20;
 
 }

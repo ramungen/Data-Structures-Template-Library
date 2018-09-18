@@ -72,7 +72,6 @@ public:
 		if (head == nullptr) {
 			head = new Node(std::move(value));
 			last = head;
-			back_parent = nullptr;
 		}
 		else {
 			last->next = new Node(std::move(value));

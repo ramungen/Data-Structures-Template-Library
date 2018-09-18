@@ -15,5 +15,6 @@ A header that includes all data structures
 #include "structures/slinked_list.h"
 #include "structures/stack.h"
 #include "structures/heap.h"
+#include "structures/Trie.h"
 
 #endif

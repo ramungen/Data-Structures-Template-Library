@@ -52,7 +52,7 @@ namespace data_structures {
 			hash_map& operator=(hash_map& rhs) { // needs optimizing
 			}
 			hash_map& operator=(hash_map&& rhs) {
-				table = std::move(oth.table);
+				table = std::move(rhs.table);
 			}
 
 			~hash_map() {
