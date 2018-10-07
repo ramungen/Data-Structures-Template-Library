@@ -3,7 +3,7 @@
 
 #include "AVL_tree.h"
 
-namespace data_structures {
+namespace dsl {
 
 	template <typename val_type, class compare = std::less<val_type> >
 	class set {

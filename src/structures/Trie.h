@@ -4,7 +4,7 @@
 #include <unordered_set>
 #include <stack>
 
-namespace data_structures {
+namespace dsl {
 	class Trie {
 	private:
 

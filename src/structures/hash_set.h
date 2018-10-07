@@ -3,7 +3,7 @@
 
 #include "hash_table.h"
 
-namespace data_structures {
+namespace dsl {
 
 	template <typename key_type,
 		typename prehash = std::hash<key_type>, class Compare = std::less<key_type> >

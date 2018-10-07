@@ -6,7 +6,7 @@
 #include <stack>
 #include <queue>
 
-namespace implementation {
+namespace dsl::implementation {
 
 	template <typename key_type, class compare = std::less<key_type> >
 	class AVL_tree {
