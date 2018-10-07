@@ -3,7 +3,7 @@
 
 #include <utility>
 #include <functional>
-namespace data_structures {
+namespace dsl {
 	/*
 	by default this is min heap
 	make second template parameter std::greater<val_type> for a max heap

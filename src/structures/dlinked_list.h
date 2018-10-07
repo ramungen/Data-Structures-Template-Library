@@ -2,22 +2,102 @@
 #ifndef DLINKED_LIST
 #define DLINKED_LIST
 
-#include <utility>
-
-namespace data_structures {
+namespace dsl {
 	// doubly linked list
 	template<class val_type>
 	class dlinked_list {
+
+
+	private:
+		struct Node;
+
+		template<typename val_type>
+		class bidirectional_iterator {
+
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = Node;
+			using pointer = Node* ;
+			using reference = Node& ;
+
+		private:
+
+			// for accessing private methods
+			friend class dlinked_list;
+
+			bidirectional_iterator(pointer p) : ptr(p) {}
+
+		public:
+
+			bidirectional_iterator() : ptr(nullptr) {}
+			bidirectional_iterator(const bidirectional_iterator& oth) : ptr(oth.ptr) {}
+			bidirectional_iterator& operator=(const bidirectional_iterator& rhs) {
+
+				ptr = rhs.ptr;
+				return *this;
+			}
+			bidirectional_iterator& operator--() {
+				if (ptr == nullptr) {
+					throw std::exception("error advancing end iterator");
+				}
+				ptr = ptr->prev;
+				return *this;
+			}
+
+			bidirectional_iterator& operator--(int dum) {
+				bidirectional_iterator temp(*this);
+				this->operator--();
+				return temp;
+			}
+
+			bidirectional_iterator& operator++() {
+				if (ptr == nullptr) {
+					throw std::exception("error advancing end iterator");
+				}
+				ptr = ptr->next;
+				return *this;
+			}
+			bidirectional_iterator operator++(int dum) {
+				bidirectional_iterator temp(*this);
+				this->operator++();
+				return temp;
+			}
+			bool operator ==(const bidirectional_iterator& rhs) const {
+				return ptr == rhs.ptr;
+			}
+			bool operator !=(const bidirectional_iterator& rhs) const {
+				return ptr != rhs.ptr;
+			}
+			val_type& operator*() const {
+				if (ptr == nullptr) {
+					throw std::exception("error dereferencing an invalid iterator");
+				}
+				return ptr->data;
+			}
+			val_type* operator->() const {
+				if (ptr == nullptr) {
+					throw std::exception("error dereferencing an invalid iterator");
+				}
+				return &ptr->data;
+			}
+
+		private:
+			pointer ptr;
+
+		};
+
 	public:
+		
+		using iterator = bidirectional_iterator<val_type>;
+		using const_iterator = bidirectional_iterator<const val_type>;
 
 		dlinked_list() :
 			head(nullptr),
 			tail(nullptr),
-			list_length(0) {}
+			size_(0) {}
 
 		dlinked_list(const dlinked_list<val_type>& rhs) {
 			Node* iter = rhs.head;
-			while (iter) {
+			while (iter != nullptr) {
 				push_back(iter->data);
 				iter = iter->next;
 
@@ -25,16 +105,65 @@ namespace data_structures {
 
 		}
 
+		iterator begin() const {
+			return iterator(head);
+		}
+
+		iterator end() const {
+			return iterator();
+		}
+
+		const_iterator cbegin() const {
+			return const_iterator(head);
+		}
+
+		const_iterator cend() const {
+			return const_iterator();
+		}
+
 		dlinked_list(const std::initializer_list<val_type>& list) {
 			for (auto elem : list) {
-				insert(elem);
+				push_back(elem);
 			}
 		}
 
-		dlinked_list(dlinked_list<val_type>&& rhs) : head(nullptr), tail(nullptr), list_length(0) {
+		void erase(iterator& where) {
+			Node* current = where.ptr;
+			if (current->next != nullptr) {
+				current->next->prev = current->prev;
+			}
+			if (current->prev != nullptr) {
+				current->prev->next = current->next;
+			}
+
+			where.ptr = current->prev;
+			delete current;
+
+		}
+
+		iterator insert(iterator where, const val_type& value) {
+			Node* current = where.ptr;
+			
+			if (where == end()) {
+				push_back(value);
+				return iterator(tail);
+			}
+			else if (where == begin()) {
+				push_front(value);
+				return iterator(head);
+			}
+			Node* newNode = new Node(value);
+
+			current->prev->next = newNode;
+			newNode->next = current;
+
+			return iterator(newNode);
+		}
+
+		dlinked_list(dlinked_list<val_type>&& rhs) : head(nullptr), tail(nullptr), size_(0) {
 			std::swap(this->head, rhs.head);
 			std::swap(this->tail, rhs.tail);
-			std::swap(this->list_length, rhs.list_length);
+			std::swap(this->size_, rhs.size_);
 		}
 
 		~dlinked_list() {
@@ -51,14 +180,14 @@ namespace data_structures {
 			}
 			head = nullptr;
 			tail = nullptr;
-			list_length = 0;
+			size_ = 0;
 		}
 
 		dlinked_list<val_type>& operator=(dlinked_list<val_type>&& rhs) {
 			clear();
 			std::swap(head, rhs.head);
 			std::swap(tail, rhs.tail);
-			std::swap(list_length, rhs.list_length);
+			std::swap(size_, rhs.size_);
 			return *this;
 		}
 
@@ -75,15 +204,17 @@ namespace data_structures {
 
 
 		void append(dlinked_list<val_type>&& other) {
+
 			this->tail->next = other.head;
-			if (other.head) {
-				other.head.prev = this->tail;
+			other.head->prev = tail;
+			if (other.head != nullptr) {
+				other.head->prev = this->tail;
+				other.head->prev = this->tail;
 			}
-			this->ListLength += other.length();
+			size_ += other.size();
 		}
 
-
-		void push_front(val_type const& value) {
+		void push_front(const val_type& value) {
 			Node* newNode = new Node(value);
 			if (head == nullptr) {
 				head = newNode;
@@ -101,7 +232,7 @@ namespace data_structures {
 					tail = head;
 				}
 			}
-			++list_length;
+			++size_;
 
 		}
 
@@ -115,7 +246,7 @@ namespace data_structures {
 				newNode->prev = tail;
 				tail = newNode;
 				tail->next = nullptr;
-				++list_length;
+				++size_;
 			}
 		}
 
@@ -140,7 +271,7 @@ namespace data_structures {
 						}
 						delete iter;
 						iter = nullptr;
-						--list_length;
+						--size_;
 						return;
 					}
 					iter = iter->next;
@@ -159,7 +290,7 @@ namespace data_structures {
 				delete head->prev;
 				head->prev = nullptr;
 			}
-			--list_length;
+			--size_;
 		}
 
 		void pop_back() {
@@ -173,12 +304,23 @@ namespace data_structures {
 				delete tail->next;
 				tail->next = nullptr;
 			}
-			--list_length;
+			--size_;
 		}
+
+		size_t size() const {
+			return size_;
+		}
+
 
 	private:
 		struct Node {
 			Node(const val_type& val) : data(val), next(nullptr), prev(nullptr) {}
+
+			void link(Node* newNext) {
+				this->next = newNext;
+				newNext->prev = next;
+
+			}
 
 			Node* next;
 			Node* prev;
@@ -188,7 +330,7 @@ namespace data_structures {
 		};
 		Node* head;
 		Node* tail;
-		unsigned int list_length;
+		size_t size_;
 	};
 
 }

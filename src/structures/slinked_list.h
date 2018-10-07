@@ -5,7 +5,7 @@
 #include <iostream>
 #include <iterator>
 
-namespace data_structures {
+namespace dsl {
 	template <typename val_type>
 	class slinked_list {
 
@@ -17,15 +17,19 @@ namespace data_structures {
 
 			using iterator_category = std::forward_iterator_tag;
 			using value_type = Node;
-			using pointer = Node * ;
-			using reference = Node & ;
+			using pointer = Node* ;
+			using reference = Node& ;
+
+		private:
+
+			// for accessing the private constructor
+			friend class slinked_list;
+			forward_iterator(pointer p) : ptr(p) {}
 
 		public:
 
 			forward_iterator() : ptr(nullptr) {}
-			forward_iterator(pointer p) : ptr(p) {}
-			forward_iterator(reference p) : ptr(&p) {}
-			forward_iterator(const forward_iterator* source) : ptr(source->ptr) {}
+			forward_iterator(const forward_iterator& source) : ptr(source->ptr) {}
 			forward_iterator& operator=(const forward_iterator& rhs) {
 
 				ptr = rhs.ptr;
@@ -71,12 +75,10 @@ namespace data_structures {
 		};
 
 
-
-
 	public:
 
-		typedef forward_iterator<val_type> iterator;
-		typedef forward_iterator<const val_type> const_iterator;
+		using iterator = forward_iterator<val_type>;
+		using const_iterator = forward_iterator<const val_type>;
 
 		iterator begin() const {
 			return iterator(head);
@@ -95,7 +97,7 @@ namespace data_structures {
 		}
 
 		bool empty() {
-			return listLength == 0;
+			return size_ == 0;
 		}
 		iterator find(const val_type& value) {
 
@@ -111,13 +113,13 @@ namespace data_structures {
 		}
 
 		slinked_list() :
-			listLength(0), head(nullptr) {}
+			size_(0), head(nullptr) {}
 
 		void push_front(const val_type&& value) {
 			Node* temp = new Node(std::move(value));
 			temp->next = head;
 			head = temp;
-			++listLength;
+			++size_;
 		}
 
 
@@ -126,7 +128,7 @@ namespace data_structures {
 			Node* temp = new Node(value);
 			temp->next = head;
 			head = temp;
-			++listLength;
+			++size_;
 		}
 
 		void reverse() {
@@ -144,16 +146,16 @@ namespace data_structures {
 		}
 
 		slinked_list(slinked_list<val_type>&& rhs) :
-			head(nullptr), listLength(0) {
+			head(nullptr), size_(0) {
 			std::swap(head, rhs.head);
-			std::swap(listLength, rhs.listLength);
+			std::swap(size_, rhs.size_);
 		}
 
 		slinked_list(slinked_list<val_type>& rhs) :
-			listLength(rhs.listLength) {
+			size_(rhs.size_) {
 			if (rhs.head) {
 				Node* iter = rhs.head;
-				for (int i = 0; i < rhs.length(); ++i) {
+				for (int i = 0; i < rhs.size(); ++i) {
 					this->push_back(iter->data);
 					iter = iter->next;
 				}
@@ -161,49 +163,50 @@ namespace data_structures {
 		}
 
 		slinked_list<val_type>& operator=(slinked_list<val_type>&& rhs) {
+			this->clear();
+			
 			std::swap(head, rhs.head);
-			std::swap(listLength, rhs.listLength);
-			~rhs;
+			std::swap(size_, rhs.size_);
 			return *this;
 		}
 
 
-		slinked_list<val_type>& operator=(slinked_list<val_type>& rhs) {
-			head = rhs.head;
-			listLength = rhs.head;
+		slinked_list<val_type>& operator=(const slinked_list<val_type>& rhs) {
+			this->clear();
+
+			for (auto& elem : rhs) {
+				push_back(elem);
+			}
 			return *this;
 		}
 
 
-		void push_back(val_type value) {
+		void push_back(const val_type& value) {
 			Node* temp = new Node(value);
-			last = temp;
-			if (!head) {
+
+			if (head == nullptr) {
 				head = temp;
+				last = temp;
 			}
 			else {
-				Node* iter = head;
-				while (iter->next) {
-					iter = iter->next;
-				}
-				iter->next = temp;
+				Node* prevLast = last;
+				prevLast->next = temp;
 			}
-			++listLength;
+
+			last = temp;
+			++size_;
 		}
 
 
-		bool erase(val_type value) {
+		bool erase(const val_type& value) {
 			if (head == nullptr) {
 				return false;
 			}
 			Node* iter = head;
 			if (head->data == value) {
-				if (head->next != nullptr) {
-					head = head->next;
-				}
-				else {
-					head = nullptr;
-				}
+				Node* temp = head->next;
+				delete head;
+				head = temp;
 			}
 			else {
 				Node* prev = nullptr;
@@ -215,79 +218,24 @@ namespace data_structures {
 					iter = iter->next;
 
 				}
+				if (iter == last) {
+					last = prev;
+				}
 				prev->next = iter->next;
 			}
-			--listLength;
+			--size_;
 			delete iter;
 			return true;
 		}
 
 
-		slinked_list<val_type> merge(slinked_list& second) {
-			if (this->head == nullptr) {
-				return second;
-			}
-			if (second.head == nullptr) {
-				return *this;
-			}
-			Node* iter = head;
-
-			while (iter->next != nullptr) {
-				iter = iter->next;
-			}
-			iter->next = second.head;
-			this->listLength += second.listLength;
-			return *this;
+		void merge(slinked_list<val_type>&& second) {
+			last->next = second.head;
+			size_ += second.size_;
 		}
 
 
-		void insert_at(unsigned int at, val_type value) {
-
-			Node* newNode = new Node(value);
-			if (at == 0) {
-				if (head == nullptr) {
-					head = newNode;
-					head->next = nullptr;
-					++listLength;
-					return;
-				}
-				else {
-					Node* temp = head;
-					head = newNode;
-					head->next = temp;
-					++listLength;
-					return;
-				}
-			}
-
-			Node* iter = head;
-			Node* prev = nullptr;
-
-			int count = 0;
-
-			while (iter != nullptr) {
-
-				if (count == at) {
-
-					prev->next = newNode;
-					newNode->next = iter;
-					return;
-				}
-				prev = iter;
-				iter = iter->next;
-				count++;
-			}
-			if (count == at) {
-				prev->next = newNode;
-				newNode->next = iter;
-			}
-			else {
-				throw std::out_of_range("insertion place specified was out of bounds");
-			}
-		}
-
-
-		slinked_list<val_type> operator+(slinked_list<val_type>& other) {
+		slinked_list<val_type>& operator+(slinked_list<val_type>& other) {
 			if (head == nullptr) {
 				return other;
 			}
@@ -299,29 +247,35 @@ namespace data_structures {
 			return *this;
 		}
 
-
-
 		~slinked_list() {
-			Node* next = nullptr;
-			if (head) {
-				next = head->next;
-				delete head;
-			}
-			Node* curr;
-			while (next) {
-				curr = next;
-				next = curr->next;
-				delete curr;
-			}
+			clear();
 		}
 
 
-		unsigned int length() {
-			return listLength;
+		unsigned int size() {
+			return size_;
+		}
+
+		void clear() {
+			Node* current = head;
+			while (current != nullptr) {
+				Node* temp = current;
+				current = current->next;
+				delete temp;
+			}
+			head = nullptr;
+			size_ = 0;
+		}
+
+		void pop_front() {
+			Node* temp = head;
+			head = temp->next;
+			delete temp;
 		}
 
 
 		void sort() {
+
 			Node* current = head;
 			Node* next = nullptr;
 			while (current && current->next) { // insertion sort
@@ -346,9 +300,9 @@ namespace data_structures {
 
 	private:
 
-		Node * head;
+		Node* head;
 		Node* last;
-		unsigned int listLength;
+		size_t size_;
 	};
 
 }

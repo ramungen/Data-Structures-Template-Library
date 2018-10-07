@@ -7,7 +7,7 @@
 #include <initializer_list>
 
 
-namespace implementation {
+namespace dsl::implementation {
 
 	template <typename key_type,
 		typename prehash = std::hash<key_type> , class Compare = std::less<key_type> >

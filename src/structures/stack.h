@@ -1,7 +1,7 @@
 #ifndef STACK_H
 #define STACK_H
 #include <exception>
-namespace data_structures {
+namespace dsl {
 
 
 	template <typename key_type>
