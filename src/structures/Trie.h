@@ -6,8 +6,35 @@
 
 namespace dsl {
 	class Trie {
+
+	// forward declarations
+		struct Node;
+		class TrieHash;
+		struct Symbol;
+
+	// public interface
+	public:
+		Trie() : root(new Node) {}
+
+		size_t size() {	return size_; }
+		void erase(const std::string& word);
+		bool contains(const std::string& word) const;
+		void insert(const std::string& word);
+
+	// utility functions
+	private:
+		void DeleteNodes(std::stack<std::pair<Node*, Symbol> >& toDelete);
+
+
+	// private members
 	private:
 
+		size_t size_;
+		Node* root;
+
+
+	// helper classes
+	private:
 
 		struct Symbol {
 			Symbol(char ch, bool end) : character(ch), endOfWord(end) {}
@@ -39,125 +66,6 @@ namespace dsl {
 			}
 		};
 
-
-
-	public:
-
-		Trie() : root(new Node) {
-
-		}
-
-		size_t size() {
-			return size_;
-		}
-
-		void erase(const std::string& word) {
-			--size_;
-
-			Node* current = root;
-			bool isEnd = false;
-
-			std::stack<std::pair<Node*, Symbol> > toDelete;
-
-			size_t counter = 0;
-			for (auto& letter : word) {
-				isEnd = (counter++ == word.length() - 1);
-
-				Symbol symbol(letter, isEnd);
-
-				// if the symbol is not found, then
-				// the word is not present in the trie
-				if (current->symbols.find(symbol) == current->symbols.end()) {
-					// no deletion happened so increase the size to previous
-					++size_;
-					return;
-				}
-
-				// we fill not delete those Symbols that have neighbours
-				if (current->symbols.size() < 2) {
-					toDelete.push({ current, symbol });
-				}
-
-				current = current->next(symbol);
-			}
-
-			DeleteNodes(toDelete);
-		}
-
-		bool contains(const std::string& word) const {
-
-			Node* current = root;
-			bool isEnd = false;
-
-			size_t counter = 0;
-			for (auto& letter : word) {
-				isEnd = (counter++ == word.length() - 1);
-
-				Symbol symbol(letter, isEnd);
-				if (current->symbols.find(symbol) == current->symbols.end()) {
-					return false;
-				}
-
-				current = current->next(symbol);
-			}
-
-			return true;
-		}
-
-
-		void insert(const std::string& word) {
-			bool alreadyExisted = true;
-			++size_;
-
-			Node* current = root;
-			bool isEnd = false;
-
-			size_t counter = 0;
-			for (auto& letter : word) {
-				isEnd = (counter++ == word.length() - 1);
-
-				Symbol symbol(letter, isEnd);
-
-				// if the symbol does not yet exist
-				if (current->symbols.find(symbol) == current->symbols.end()) {
-					alreadyExisted = false;
-					current->symbols[symbol] = new Node;
-				}
-				current = current->symbols.at(symbol);
-			}
-
-			// we did not actually insert anything so increase the size back to normal
-			if (alreadyExisted) {
-				--size_;
-			}
-
-		}
-
-		// utility functions
-	private:
-
-		void DeleteNodes(std::stack<std::pair<Node*, Symbol> >& toDelete) {
-
-			while (!toDelete.empty()) {
-
-				auto[node, symbol] = toDelete.top();
-				toDelete.pop();
-
-				Node* nodeToDelete = node->next(symbol);
-
-				// if it has no neighbours
-				if (nodeToDelete->symbols.size() == 0) {
-					delete nodeToDelete;
-					node->symbols.erase(symbol);
-				}
-			}
-		}
-
-		// private members
-	private:
-
-		size_t size_;
-		Node* root;
 	};
 
 }

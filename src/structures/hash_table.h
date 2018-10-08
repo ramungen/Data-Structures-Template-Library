@@ -209,7 +209,6 @@ namespace dsl::implementation {
 				using pointer = Bucket * ;
 				using reference = Bucket & ;
 				using value = key_type;
-				//using value = std::pair<const key_type, val_type>;
 
 				friend class hash_table; // to access private constructors
 			public:
@@ -642,7 +641,7 @@ namespace dsl::implementation {
 			void shrink() {
 				if (table.size() > starting_size && (float)table.size() * load_factor >= elements * 4) {
 
-					start_pos = 2147483647;
+					start_pos = INT_MAX;
 					end_pos = -1;
 
 					std::vector<Bucket> temp((int)((float)table.size() * load_factor / 2));
